@@ -1,7 +1,6 @@
 ---
 import '@fontsource-variable/heebo';
-import '@fontsource/frank-ruhl-libre/500.css';
-import '@fontsource/frank-ruhl-libre/700.css';
+import '@fontsource-variable/rubik';
 
 export interface Props {
   title: string;
@@ -35,7 +34,20 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1020" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          document.documentElement.dataset.theme =
+            t === 'dark' || t === 'light' ? t : 'light';
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light';
+        }
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
@@ -62,27 +74,96 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     }
   </head>
   <body>
+    <button
+      id="theme-toggle"
+      type="button"
+      class="theme-toggle"
+      aria-label="החלפת מצב תצוגה (בהיר/כהה)"
+      aria-pressed="false"
+    >
+      <span aria-hidden="true">🌙</span>
+    </button>
     <slot />
   </body>
 </html>
 
+<script>
+  const btn = document.getElementById('theme-toggle');
+  const root = document.documentElement;
+
+  function currentTheme(): 'light' | 'dark' {
+    return root.dataset.theme === 'dark' ? 'dark' : 'light';
+  }
+
+  function render(theme: 'light' | 'dark') {
+    const icon = btn?.querySelector('span');
+    if (icon) icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    btn?.setAttribute('aria-pressed', String(theme === 'dark'));
+  }
+
+  function apply(theme: 'light' | 'dark') {
+    root.dataset.theme = theme;
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      /* storage blocked */
+    }
+    render(theme);
+  }
+
+  render(currentTheme());
+  btn?.addEventListener('click', () => {
+    apply(currentTheme() === 'dark' ? 'light' : 'dark');
+  });
+</script>
+
 <style is:global>
   :root {
     --font-body: 'Heebo Variable', 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-    --font-display: 'Frank Ruhl Libre', 'Heebo Variable', Georgia, serif;
-    --page-bg: #0f1226;
-    --page-ink: #f5f5fa;
+    --font-display: 'Rubik Variable', 'Rubik', 'Heebo Variable', system-ui, sans-serif;
     --maxw: 1120px;
     --radius: 18px;
-    --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.45);
 
-    /* per-holiday tokens, overridden via [data-holiday] */
+    /* ---- Light theme (default) ---- */
+    color-scheme: light;
+    --page-bg: #f7f6f3;
+    --page-ink: #1e1b26;
+    --text-muted: #5b5766;
+    --surface-1: #ffffff;
+    --surface-2: #efedf3;
+    --border: rgba(30, 27, 38, 0.12);
+    --hover: rgba(30, 27, 38, 0.06);
+    --brand: #6d28d9;
+    --brand-contrast: #ffffff;
+    --danger: #c81d63;
+    --shadow: 0 20px 50px -24px rgba(30, 27, 38, 0.28);
+    --hero-glow-1: rgba(109, 40, 217, 0.14);
+    --hero-glow-2: rgba(242, 193, 78, 0.2);
+
+    /* per-holiday tokens (components override these inline) */
     --bg: linear-gradient(160deg, #23243a, #3a3c5c);
     --ink: #f5f5fa;
     --accent: #f2c14e;
     --accent2: #7b1e3b;
     --surface: #fffaf0;
     --surface-ink: #2a2a3a;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --page-bg: #0f1020;
+    --page-ink: #f3f2f7;
+    --text-muted: #a8a4b8;
+    --surface-1: rgba(255, 255, 255, 0.06);
+    --surface-2: rgba(0, 0, 0, 0.28);
+    --border: rgba(255, 255, 255, 0.14);
+    --hover: rgba(255, 255, 255, 0.1);
+    --brand: #b79bff;
+    --brand-contrast: #17131f;
+    --danger: #ff9db1;
+    --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.55);
+    --hero-glow-1: rgba(123, 47, 247, 0.22);
+    --hero-glow-2: rgba(242, 193, 78, 0.16);
   }
 
   * {
@@ -101,14 +182,38 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    line-height: 1.2;
+    line-height: 1.15;
     font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-start: 1rem;
+    z-index: 50;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.15rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--page-ink);
+    box-shadow: var(--shadow);
+    transition: transform 0.15s ease;
+  }
+
+  .theme-toggle:hover {
+    transform: scale(1.08);
   }
 
   a {

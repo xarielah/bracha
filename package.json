@@ -15,7 +15,7 @@
     "@astrojs/sitemap": "^3.7.4",
     "@astrojs/vercel": "^11.0.10",
     "@fontsource-variable/heebo": "^5.3.0",
-    "@fontsource/frank-ruhl-libre": "^5.3.0",
+    "@fontsource-variable/rubik": "^5.3.0",
     "astro": "^7.3.2",
     "mongodb": "^7.6.0",
     "nanoid": "^6.0.1"

@@ -1,4 +1,4 @@
-import { MongoClient, type Collection } from 'mongodb';
+import { MongoClient, type Collection, type Db, type Document } from 'mongodb';
 
 export interface GreetingDoc {
   _id: string;
@@ -31,7 +31,18 @@ function clientPromise(): Promise<MongoClient> {
   return globalForMongo._mongoClientPromise;
 }
 
-export async function getGreetingsCollection(): Promise<Collection<GreetingDoc>> {
+export async function getDb(): Promise<Db> {
   const client = await clientPromise();
-  return client.db(dbName).collection<GreetingDoc>('greetings');
+  return client.db(dbName);
+}
+
+export async function getCollection<T extends Document = Document>(
+  name: string
+): Promise<Collection<T>> {
+  const db = await getDb();
+  return db.collection<T>(name);
+}
+
+export async function getGreetingsCollection(): Promise<Collection<GreetingDoc>> {
+  return getCollection<GreetingDoc>('greetings');
 }

@@ -2,8 +2,16 @@ import type { APIRoute } from 'astro';
 import { validateGreetingInput } from '../../lib/greeting';
 import { getGreetingsCollection } from '../../lib/mongo';
 import { newGreetingId } from '../../lib/id';
+import { rateLimit, getClientIp, tooManyRequests } from '../../lib/ratelimit';
+import { verifyTurnstile } from '../../lib/turnstile';
 
 export const prerender = false;
+
+// Stricter limits for creating greetings (on top of the global /api/ limit).
+const CREATE_BURST_LIMIT = 5;
+const CREATE_BURST_WINDOW = 60;
+const CREATE_HOURLY_LIMIT = 40;
+const CREATE_HOURLY_WINDOW = 3600;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -13,11 +21,24 @@ function json(body: unknown, status = 200): Response {
 }
 
 export const POST: APIRoute = async ({ request, url }) => {
+  const ip = getClientIp(request);
+
+  const burst = await rateLimit('greetings:create', ip, CREATE_BURST_LIMIT, CREATE_BURST_WINDOW);
+  if (!burst.ok) return tooManyRequests(burst.retryAfter);
+  const hourly = await rateLimit('greetings:create:h', ip, CREATE_HOURLY_LIMIT, CREATE_HOURLY_WINDOW);
+  if (!hourly.ok) return tooManyRequests(hourly.retryAfter);
+
   let raw: Record<string, unknown>;
   try {
     raw = await request.json();
   } catch {
     return json({ error: 'גוף הבקשה אינו תקין' }, 400);
+  }
+
+  const captcha = await verifyTurnstile(raw.turnstileToken, ip);
+  if (!captcha.ok) {
+    console.warn('[api/greetings] turnstile rejected:', captcha.reason);
+    return json({ error: 'אימות האבטחה נכשל. רעננו את העמוד ונסו שוב.' }, 403);
   }
 
   const { ok, errors, value } = validateGreetingInput(raw);

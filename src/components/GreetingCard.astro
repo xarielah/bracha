@@ -11,7 +11,13 @@ export interface Props {
   interactive?: boolean;
 }
 
-const { holiday, fromNames = '', toNames = '', message = '', interactive = false } = Astro.props;
+const {
+  holiday,
+  fromNames = '',
+  toNames = '',
+  message = '',
+  interactive = false,
+} = Astro.props;
 const p = holiday.palette;
 const styleVars = [
   `--bg:${p.bg}`,
@@ -30,15 +36,20 @@ const styleVars = [
   data-interactive={interactive ? 'true' : 'false'}
   style={styleVars}
 >
+  <div class="gc-shine" aria-hidden="true"></div>
   <div class="gc-canvas" aria-hidden="true"></div>
+
   <div class="gc-inner">
-    <p class="gc-eyebrow">
-      <span class="gc-to" data-empty="לכבוד …">{toNames || 'לכבוד …'}</span>
+    <p class="gc-eyebrow" hidden={!toNames}>
+      לכבוד <span class="gc-to">{toNames}</span>
     </p>
 
-    <Motif slug={holiday.slug} class="gc-motif" />
+    <span class="gc-emblem">
+      <Motif slug={holiday.slug} class="gc-motif" />
+    </span>
 
     <h2 class="gc-headline">{holiday.cardHeadline}</h2>
+    <span class="gc-divider" aria-hidden="true"></span>
 
     <p class="gc-message" data-placeholder={holiday.greetingOpeners[0]}>
       {message || holiday.greetingOpeners[0]}
@@ -46,7 +57,9 @@ const styleVars = [
 
     <figcaption class="gc-from">
       <span class="gc-from-label">באהבה,</span>
-      <span class="gc-from-names" data-empty="שם המברך/ת">{fromNames || 'שם המברך/ת'}</span>
+      <span class="gc-from-names" data-empty="שם המברך/ת"
+        >{fromNames || 'שם המברך/ת'}</span
+      >
     </figcaption>
 
     <p class="gc-holiday-tag">{holiday.fullName} · {holiday.hebrewDate}</p>
@@ -54,7 +67,9 @@ const styleVars = [
     {
       interactive && (
         <div class="gc-actions">
-          <button type="button" class="gc-replay">✨ עוד פעם!</button>
+          <button type="button" class="gc-replay">
+            ✨ עוד פעם!
+          </button>
           <a class="gc-cta" href={`/${holiday.slug}`}>
             צרו ברכה משלכם
           </a>
@@ -70,17 +85,40 @@ const styleVars = [
     margin: 0;
     border-radius: var(--radius);
     background: var(--bg);
+    background-color: var(--accent2);
     color: var(--ink);
-    padding: clamp(1.5rem, 4vw, 3rem);
+    padding: clamp(1.75rem, 4.5vw, 3.25rem);
     overflow: hidden;
     box-shadow: var(--shadow);
     isolation: isolate;
   }
 
-  .gc-canvas {
+  /* fine grain to kill gradient banding + add depth */
+  .greeting-card::after {
+    content: '';
     position: absolute;
     inset: 0;
     z-index: 0;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .gc-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 60% at 50% -20%, rgba(255, 255, 255, 0.28), transparent 60%),
+      radial-gradient(80% 50% at 100% 120%, rgba(0, 0, 0, 0.22), transparent 60%);
+  }
+
+  .gc-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
     pointer-events: none;
   }
 
@@ -91,67 +129,99 @@ const styleVars = [
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 1rem;
+    gap: 0.85rem;
   }
 
   .gc-eyebrow {
     margin: 0;
-    font-size: 0.95rem;
-    letter-spacing: 0.06em;
-    opacity: 0.9;
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    opacity: 0.85;
   }
-
-  .gc-to,
-  .gc-from-names {
+  .gc-eyebrow,
+  .gc-from,
+  .gc-holiday-tag {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.28);
+  }
+  .gc-to {
     font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
+  .gc-emblem {
+    display: grid;
+    place-items: center;
+    width: clamp(112px, 26vw, 156px);
+    height: clamp(112px, 26vw, 156px);
+    margin: 0.25rem 0;
+  }
   .gc-motif {
-    width: clamp(90px, 22vw, 140px);
-    height: auto;
-    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
-    animation: gc-float 4s ease-in-out infinite;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.28));
+    animation: gc-float 5s ease-in-out infinite;
   }
 
   @keyframes gc-float {
     50% {
-      transform: translateY(-8px) rotate(-2deg);
+      transform: translateY(-7px);
     }
   }
 
   .gc-headline {
-    margin: 0;
-    font-size: clamp(1.7rem, 5vw, 2.6rem);
+    margin: 0.25rem 0 0;
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.22);
+  }
+
+  .gc-divider {
+    width: 54px;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--accent);
+    opacity: 0.9;
   }
 
   .gc-message {
-    margin: 0;
-    background: var(--surface);
+    margin: 0.35rem 0 0;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
     color: var(--surface-ink);
-    padding: 1.1rem 1.3rem;
-    border-radius: 14px;
-    max-width: 46ch;
-    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    padding: 1.15rem 1.4rem;
+    border-radius: 16px;
+    max-width: 44ch;
+    font-size: clamp(1rem, 2.4vw, 1.2rem);
+    line-height: 1.7;
     white-space: pre-wrap;
-    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+    box-shadow:
+      0 12px 30px -14px rgba(0, 0, 0, 0.45),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   }
 
   .gc-from {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
-    font-size: 1.05rem;
+    gap: 0.1rem;
+    margin-top: 0.4rem;
+    font-size: 1.1rem;
   }
-
   .gc-from-label {
-    opacity: 0.8;
-    font-size: 0.85rem;
+    opacity: 0.75;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+  .gc-from-names {
+    font-weight: 700;
   }
 
   .gc-holiday-tag {
-    margin: 0.5rem 0 0;
-    font-size: 0.8rem;
-    opacity: 0.7;
+    margin: 0.9rem 0 0;
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
   }
 
   .gc-actions {
@@ -159,31 +229,34 @@ const styleVars = [
     flex-wrap: wrap;
     gap: 0.75rem;
     justify-content: center;
-    margin-top: 0.75rem;
+    margin-top: 1.1rem;
   }
-
   .gc-replay,
   .gc-cta {
     border: 0;
     border-radius: 999px;
-    padding: 0.6rem 1.3rem;
+    padding: 0.65rem 1.4rem;
     font-weight: 700;
     text-decoration: none;
     transition: transform 0.15s ease;
   }
-
   .gc-replay {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.92);
     color: var(--surface-ink);
   }
-
   .gc-cta {
     background: var(--accent2);
     color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   }
-
   .gc-replay:hover,
   .gc-cta:hover {
     transform: translateY(-2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .gc-motif {
+      animation: none;
+    }
   }
 </style>

@@ -1,8 +1,12 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import GreetingCard from '../../components/GreetingCard.astro';
-import { holidays, getHoliday } from '../../data/holidays';
-import { MESSAGE_MAX_WORDS } from '../../lib/greeting';
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import GreetingCard from "../../components/GreetingCard.astro";
+import { holidays, getHoliday } from "../../data/holidays";
+import { MESSAGE_MAX_WORDS } from "../../lib/greeting";
+import { TURNSTILE_TEST_SITE_KEY } from "../../lib/turnstile";
+
+const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || TURNSTILE_TEST_SITE_KEY;
 
 export function getStaticPaths() {
   return holidays.map((h) => ({ params: { holiday: h.slug } }));
@@ -10,18 +14,23 @@ export function getStaticPaths() {
 
 const { holiday: slug } = Astro.params;
 const holiday = getHoliday(slug);
-if (!holiday) return Astro.redirect('/404');
+if (!holiday) return Astro.redirect("/404");
 
-const site = Astro.site ?? new URL('http://localhost:4321');
+const site = Astro.site ?? new URL("http://localhost:4321");
 
 const jsonLd = [
   {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'ברכות לחגי ישראל', item: site.href },
       {
-        '@type': 'ListItem',
+        "@type": "ListItem",
+        position: 1,
+        name: "ברכות לחגי ישראל",
+        item: site.href,
+      },
+      {
+        "@type": "ListItem",
         position: 2,
         name: `ברכות ל${holiday.name}`,
         item: new URL(`/${holiday.slug}`, site).href,
@@ -29,12 +38,12 @@ const jsonLd = [
     ],
   },
   {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
     mainEntity: holiday.faq.map((f) => ({
-      '@type': 'Question',
+      "@type": "Question",
       name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
+      acceptedAnswer: { "@type": "Answer", text: f.a },
     })),
   },
 ];
@@ -47,90 +56,178 @@ const jsonLd = [
   keywords={holiday.keywords}
   jsonLd={jsonLd}
 >
-  <div class="editor" data-holiday={holiday.slug} data-slug={holiday.slug}>
+  <div
+    class="editor"
+    data-holiday={holiday.slug}
+    data-slug={holiday.slug}
+    data-name={holiday.name}
+  >
+    <script
+      is:inline
+      async
+      defer
+      src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
     <div class="container">
       <nav class="crumbs" aria-label="פירורי לחם">
-        <a href="/">כל החגים</a> <span aria-hidden="true">/</span>
+        <a href="/">כל החגים</a>
+        <span aria-hidden="true">/</span>
         <span>{holiday.name}</span>
       </nav>
 
       <header class="editor-head">
         <h1>ברכה ל{holiday.name}</h1>
-        <p>{holiday.tagline}. מלאו את הפרטים – והברכה מתעדכנת מולכם בזמן אמת.</p>
+        <p>
+          {holiday.tagline}. עונים על שלוש שאלות קצרות – והברכה מוכנה לשליחה.
+        </p>
       </header>
 
       <div class="editor-grid">
-        <form class="panel" id="greeting-form" novalidate>
-          <div class="field">
-            <label for="fromNames">מאת <span class="req">*</span></label>
-            <input
-              id="fromNames"
-              name="fromNames"
-              type="text"
-              required
-              autocomplete="off"
-              placeholder="לדוגמה: משפחת כהן / דנה ויוסי"
-            />
-            <p class="error" data-error-for="fromNames" hidden></p>
-          </div>
-
-          <div class="field">
-            <label for="toNames">אל <span class="req">*</span></label>
-            <input
-              id="toNames"
-              name="toNames"
-              type="text"
-              required
-              autocomplete="off"
-              placeholder="לדוגמה: סבתא רבקה / כל המשפחה"
-            />
-            <p class="error" data-error-for="toNames" hidden></p>
-          </div>
-
-          <div class="field">
-            <label for="message">
-              מלל אישי <span class="opt">(לא חובה)</span>
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              rows="5"
-              placeholder={holiday.greetingOpeners[0]}
-              maxlength="800"></textarea>
-            <div class="counter">
-              <span data-word-count>0</span> / {MESSAGE_MAX_WORDS} מילים
+        <div class="compose">
+          <form class="panel wizard" id="greeting-form" novalidate>
+            <div class="progress">
+              <p class="progress-text">
+                שלב <span data-step-current>1</span> מתוך 3
+              </p>
+              <ol class="dots" aria-hidden="true">
+                <li class="dot is-active" data-dot="1"></li>
+                <li class="dot" data-dot="2"></li>
+                <li class="dot" data-dot="3"></li>
+              </ol>
             </div>
-            <p class="error" data-error-for="message" hidden></p>
-            <div class="suggestions">
-              <span>רעיונות:</span>
-              {
-                holiday.greetingOpeners.map((s) => (
-                  <button type="button" class="chip" data-suggestion={s}>
-                    {s.length > 42 ? s.slice(0, 42) + '…' : s}
-                  </button>
-                ))
-              }
+
+            <fieldset class="step" data-step="1">
+              <legend class="step-title">מי שולח/ת את הברכה?</legend>
+              <label for="fromNames">השם שלכם <span class="req">*</span></label>
+              <input
+                id="fromNames"
+                name="fromNames"
+                type="text"
+                required
+                autocomplete="name"
+                enterkeyhint="next"
+                placeholder="לדוגמה: משפחת כהן, או דנה ויוסי"
+              />
+              <p class="hint">כך הברכה תיחתם – "באהבה, ...".</p>
+              <p class="error" data-error-for="fromNames" hidden></p>
+              <div class="step-nav">
+                <button type="button" class="btn-primary" data-next
+                  >המשך ←</button
+                >
+              </div>
+            </fieldset>
+
+            <fieldset class="step" data-step="2" hidden>
+              <legend class="step-title">למי הברכה מיועדת?</legend>
+              <label for="toNames">שם המקבל/ת <span class="req">*</span></label>
+              <input
+                id="toNames"
+                name="toNames"
+                type="text"
+                required
+                autocomplete="off"
+                enterkeyhint="next"
+                placeholder="לדוגמה: סבתא רבקה, או כל המשפחה"
+              />
+              <p class="hint">השם יופיע בראש הברכה – "לכבוד ...".</p>
+              <p class="error" data-error-for="toNames" hidden></p>
+              <div class="step-nav">
+                <button type="button" class="btn-ghost" data-back>→ חזרה</button
+                >
+                <button type="button" class="btn-primary" data-next
+                  >המשך ←</button
+                >
+              </div>
+            </fieldset>
+
+            <fieldset class="step" data-step="3" hidden>
+              <legend class="step-title">רוצים להוסיף כמה מילים משלכם?</legend>
+              <label for="message">
+                ברכה אישית <span class="opt">(אפשר גם לדלג)</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                rows="4"
+                placeholder={holiday.greetingOpeners[0]}
+                enterkeyhint="done"
+                maxlength="800"></textarea>
+              <div class="counter">
+                <span data-word-count>0</span> / {MESSAGE_MAX_WORDS} מילים
+              </div>
+              <p class="error" data-error-for="message" hidden></p>
+              <div class="suggestions">
+                <span>רעיונות מוכנים:</span>
+                {
+                  holiday.greetingOpeners.map((s) => (
+                    <button type="button" class="chip" data-suggestion={s}>
+                      {s}
+                    </button>
+                  ))
+                }
+              </div>
+
+              <div
+                class="turnstile"
+                id="turnstile-widget"
+                data-sitekey={turnstileSiteKey}
+              >
+              </div>
+
+              <div class="step-nav">
+                <button type="button" class="btn-ghost" data-back>→ חזרה</button
+                >
+                <button
+                  type="submit"
+                  class="btn-primary"
+                  data-default-label="יצירת הברכה 🎉"
+                >
+                  יצירת הברכה 🎉
+                </button>
+              </div>
+              <p class="form-error" id="form-error" hidden></p>
+            </fieldset>
+          </form>
+
+          <div class="panel result" id="result" hidden>
+            <p class="result-title">🎉 הברכה מוכנה!</p>
+            <p class="result-sub">שלחו אותה עכשיו בוואטסאפ:</p>
+
+            <a
+              id="wa-btn"
+              class="wa-btn"
+              href="#"
+              target="_blank"
+              rel="noopener"
+            >
+              <svg
+                viewBox="0 0 32 32"
+                width="22"
+                height="22"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M16 3C9 3 3.5 8.5 3.5 15.5c0 2.4.7 4.6 1.9 6.6L4 29l7.1-1.9c1.9 1 4.1 1.6 6.4 1.6h.1c7 0 12.5-5.5 12.5-12.5S25.6 3.7 18.6 3.7c-.9 0-1.7 0-2.6.3zm.4 3.2c5.5 0 10 4.5 10 10s-4.5 10-10 10c-2.1 0-4-.6-5.7-1.7l-.4-.2-4.2 1.1 1.1-4.1-.3-.4A9.8 9.8 0 0 1 6.4 16c0-5.5 4.5-10 10-10zm-3.7 5c-.3 0-.7.1-1 .5-.4.4-1.4 1.3-1.4 3.2s1.4 3.7 1.6 4c.2.3 2.8 4.4 6.9 6 3.4 1.3 4.1 1.1 4.9 1 .8-.1 2.5-1 2.8-2 .3-1 .3-1.8.2-2-.1-.2-.4-.3-.9-.5-.5-.3-2.5-1.2-2.9-1.4-.4-.1-.7-.2-1 .3-.3.4-1 1.3-1.3 1.6-.2.3-.4.3-.9.1-.5-.3-1.9-.7-3.6-2.2-1.3-1.2-2.2-2.6-2.5-3.1-.3-.5 0-.7.2-1 .2-.2.5-.5.7-.8.2-.3.3-.4.4-.7.1-.3.1-.5 0-.7-.1-.2-1-2.3-1.3-3.2-.3-.8-.7-.7-1-.7z"
+                ></path>
+              </svg>
+              שליחה בוואטסאפ
+            </a>
+
+            <button type="button" id="copy-btn" class="btn-ghost copy-btn">
+              העתקת ההודעה
+            </button>
+
+            <div class="result-secondary">
+              <a id="open-btn" href="#" target="_blank" rel="noopener">
+                תצוגה מקדימה של הברכה
+              </a>
+              <button type="button" id="share-btn" hidden
+                >אפשרויות שיתוף נוספות</button
+              >
+              <a href={`/${holiday.slug}`} data-restart>יצירת ברכה נוספת</a>
             </div>
           </div>
-
-          <button type="submit" class="submit" data-default-label="צרו קישור לשיתוף">
-            צרו קישור לשיתוף
-          </button>
-
-          <div class="result" id="result" hidden>
-            <p class="result-title">🎉 הברכה מוכנה! שתפו את הקישור:</p>
-            <div class="result-row">
-              <input id="result-url" type="text" readonly />
-              <button type="button" id="copy-btn">העתקה</button>
-            </div>
-            <div class="result-actions">
-              <a id="open-btn" href="#" target="_blank" rel="noopener">פתיחת הברכה</a>
-              <button type="button" id="share-btn" hidden>שיתוף…</button>
-            </div>
-          </div>
-
-          <p class="form-error" id="form-error" hidden></p>
-        </form>
+        </div>
 
         <div class="panel preview-panel">
           <p class="preview-label">תצוגה מקדימה — כך הנמען יראה את הברכה</p>
@@ -164,148 +261,316 @@ const jsonLd = [
 </BaseLayout>
 
 <script>
-  import { countWords } from '../../lib/greeting';
+  import { countWords } from "../../lib/greeting";
 
-  const root = document.querySelector<HTMLElement>('.editor')!;
+  const root = document.querySelector<HTMLElement>(".editor")!;
   const slug = root.dataset.slug!;
-  const form = document.querySelector<HTMLFormElement>('#greeting-form')!;
-  const preview = document.querySelector<HTMLElement>('#preview')!;
-  const gcTo = preview.querySelector<HTMLElement>('.gc-to')!;
-  const gcFrom = preview.querySelector<HTMLElement>('.gc-from-names')!;
-  const gcMessage = preview.querySelector<HTMLElement>('.gc-message')!;
-  const messagePlaceholder = gcMessage.dataset.placeholder || '';
+  const holidayName = root.dataset.name || "";
+  const form = document.querySelector<HTMLFormElement>("#greeting-form")!;
+  const preview = document.querySelector<HTMLElement>("#preview")!;
+  const gcEyebrow = preview.querySelector<HTMLElement>(".gc-eyebrow");
+  const gcTo = preview.querySelector<HTMLElement>(".gc-to");
+  const gcFrom = preview.querySelector<HTMLElement>(".gc-from-names");
+  const gcMessage = preview.querySelector<HTMLElement>(".gc-message");
+  const messagePlaceholder = gcMessage?.dataset.placeholder || "";
 
-  const fromInput = form.elements.namedItem('fromNames') as HTMLInputElement;
-  const toInput = form.elements.namedItem('toNames') as HTMLInputElement;
-  const messageInput = form.elements.namedItem('message') as HTMLTextAreaElement;
-  const wordCount = document.querySelector<HTMLElement>('[data-word-count]')!;
-  const counter = document.querySelector<HTMLElement>('.counter')!;
+  const fromInput = form.elements.namedItem("fromNames") as HTMLInputElement;
+  const toInput = form.elements.namedItem("toNames") as HTMLInputElement;
+  const messageInput = form.elements.namedItem(
+    "message",
+  ) as HTMLTextAreaElement;
+  const wordCount = document.querySelector<HTMLElement>("[data-word-count]")!;
+  const counter = document.querySelector<HTMLElement>(".counter")!;
   const MAX_WORDS = 60;
 
   function sync() {
-    gcTo.textContent = toInput.value.trim() || (gcTo.dataset.empty ?? '');
-    gcFrom.textContent = fromInput.value.trim() || (gcFrom.dataset.empty ?? '');
-    const msg = messageInput.value.trim();
-    gcMessage.textContent = msg || messagePlaceholder;
+    const to = toInput.value.trim();
+    if (gcTo) gcTo.textContent = to;
+    if (gcEyebrow) gcEyebrow.hidden = !to;
+    if (gcFrom)
+      gcFrom.textContent = fromInput.value.trim() || (gcFrom.dataset.empty ?? "");
+    if (gcMessage)
+      gcMessage.textContent = messageInput.value.trim() || messagePlaceholder;
     const n = countWords(messageInput.value);
     wordCount.textContent = String(n);
-    counter.classList.toggle('over', n > MAX_WORDS);
+    counter.classList.toggle("over", n > MAX_WORDS);
   }
 
   [fromInput, toInput, messageInput].forEach((el) =>
-    el.addEventListener('input', sync)
+    el.addEventListener("input", sync),
   );
 
-  document.querySelectorAll<HTMLButtonElement>('.chip').forEach((chip) => {
-    chip.addEventListener('click', () => {
-      messageInput.value = chip.dataset.suggestion || '';
+  document.querySelectorAll<HTMLButtonElement>(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      messageInput.value = chip.dataset.suggestion || "";
       sync();
       messageInput.focus();
     });
   });
 
   function setError(name: string, msg: string | null) {
-    const el = document.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+    const el = document.querySelector<HTMLElement>(
+      `[data-error-for="${name}"]`,
+    );
     if (!el) return;
-    el.textContent = msg || '';
+    el.textContent = msg || "";
     el.hidden = !msg;
-    form.querySelector(`[name="${name}"]`)?.classList.toggle('invalid', !!msg);
+    form.querySelector(`[name="${name}"]`)?.classList.toggle("invalid", !!msg);
   }
 
-  const result = document.querySelector<HTMLElement>('#result')!;
-  const resultUrl = document.querySelector<HTMLInputElement>('#result-url')!;
-  const openBtn = document.querySelector<HTMLAnchorElement>('#open-btn')!;
-  const copyBtn = document.querySelector<HTMLButtonElement>('#copy-btn')!;
-  const shareBtn = document.querySelector<HTMLButtonElement>('#share-btn')!;
-  const submitBtn = form.querySelector<HTMLButtonElement>('.submit')!;
-  const formError = document.querySelector<HTMLElement>('#form-error')!;
+  /* ---------- wizard ---------- */
+  const steps = Array.from(form.querySelectorAll<HTMLElement>(".step"));
+  const dots = Array.from(document.querySelectorAll<HTMLElement>(".dot"));
+  const stepCurrentEl = document.querySelector<HTMLElement>(
+    "[data-step-current]",
+  )!;
+  let current = 1;
 
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    ['fromNames', 'toNames', 'message'].forEach((n) => setError(n, null));
-    formError.hidden = true;
-
-    let hasError = false;
-    if (!fromInput.value.trim()) { setError('fromNames', 'יש למלא שם'); hasError = true; }
-    if (!toInput.value.trim()) { setError('toNames', 'יש למלא שם'); hasError = true; }
-    if (countWords(messageInput.value) > MAX_WORDS) {
-      setError('message', `עד ${MAX_WORDS} מילים`); hasError = true;
+  function validateStep(n: number): boolean {
+    if (n === 1 && !fromInput.value.trim()) {
+      setError("fromNames", "צריך למלא שם כדי להמשיך");
+      fromInput.focus();
+      return false;
     }
-    if (hasError) return;
+    if (n === 2 && !toInput.value.trim()) {
+      setError("toNames", "צריך למלא שם כדי להמשיך");
+      toInput.focus();
+      return false;
+    }
+    if (n === 3 && countWords(messageInput.value) > MAX_WORDS) {
+      setError("message", `הברכה ארוכה מדי – עד ${MAX_WORDS} מילים`);
+      return false;
+    }
+    return true;
+  }
+
+  function goToStep(n: number) {
+    current = Math.min(3, Math.max(1, n));
+    steps.forEach((s) => {
+      s.hidden = Number(s.dataset.step) !== current;
+    });
+    dots.forEach((d) => {
+      d.classList.toggle("is-active", Number(d.dataset.dot) <= current);
+    });
+    stepCurrentEl.textContent = String(current);
+    const field =
+      steps[current - 1].querySelector<HTMLElement>("input, textarea");
+    window.setTimeout(() => field?.focus(), 40);
+    if (current === 3) ensureTurnstile();
+  }
+
+  form.querySelectorAll<HTMLButtonElement>("[data-next]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setError(current === 1 ? "fromNames" : "toNames", null);
+      if (validateStep(current)) goToStep(current + 1);
+    });
+  });
+  form.querySelectorAll<HTMLButtonElement>("[data-back]").forEach((btn) => {
+    btn.addEventListener("click", () => goToStep(current - 1));
+  });
+
+  [fromInput, toInput].forEach((el) => {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        (
+          steps[current - 1].querySelector("[data-next]") as HTMLButtonElement
+        )?.click();
+      }
+    });
+  });
+
+  /* ---------- turnstile (explicit render on step 3) ---------- */
+  interface TurnstileApi {
+    render: (el: HTMLElement | string, opts: Record<string, unknown>) => string;
+    getResponse: (id?: string) => string | undefined;
+    reset: (id?: string) => void;
+  }
+  const getTurnstile = (): TurnstileApi | undefined =>
+    (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+  const widgetEl = document.getElementById("turnstile-widget")!;
+  let widgetId: string | null = null;
+  let captchaToken = "";
+
+  function ensureTurnstile() {
+    if (widgetId !== null) return;
+    const t = getTurnstile();
+    if (!t) {
+      window.setTimeout(ensureTurnstile, 250);
+      return;
+    }
+    widgetId = t.render(widgetEl, {
+      sitekey: widgetEl.dataset.sitekey,
+      language: "he",
+      callback: (token: string) => {
+        captchaToken = token;
+      },
+      "error-callback": () => {
+        captchaToken = "";
+      },
+      "expired-callback": () => {
+        captchaToken = "";
+      },
+    });
+  }
+
+  function currentToken(): string {
+    return (
+      captchaToken || getTurnstile()?.getResponse(widgetId ?? undefined) || ""
+    );
+  }
+  function resetTurnstile() {
+    captchaToken = "";
+    try {
+      if (widgetId !== null) getTurnstile()?.reset(widgetId);
+    } catch {
+      /* not ready */
+    }
+  }
+
+  /* ---------- result / whatsapp ---------- */
+  const result = document.querySelector<HTMLElement>("#result")!;
+  const waBtn = document.querySelector<HTMLAnchorElement>("#wa-btn")!;
+  const openBtn = document.querySelector<HTMLAnchorElement>("#open-btn")!;
+  const copyBtn = document.querySelector<HTMLButtonElement>("#copy-btn")!;
+  const shareBtn = document.querySelector<HTMLButtonElement>("#share-btn")!;
+  const submitBtn = form.querySelector<HTMLButtonElement>('[type="submit"]')!;
+  const formError = document.querySelector<HTMLElement>("#form-error")!;
+  let shareUrl = "";
+
+  function whatsappMessage(): string {
+    const from = fromInput.value.trim();
+    return `${from} שלחו לך ברכה ל${holidayName}! לחצו על הקישור הבא כדי לצפות בברכה - ${shareUrl}`;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    formError.hidden = true;
+    ["fromNames", "toNames", "message"].forEach((n) => setError(n, null));
+
+    if (!fromInput.value.trim()) return goToStep(1);
+    if (!toInput.value.trim()) return goToStep(2);
+    if (!validateStep(3)) return;
+
+    const token = currentToken();
+    if (!token) {
+      formError.textContent = 'אנא סמנו "אני לא רובוט" כדי להמשיך.';
+      formError.hidden = false;
+      ensureTurnstile();
+      return;
+    }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'יוצר…';
+    submitBtn.textContent = "רגע, יוצרים…";
     try {
-      const res = await fetch('/api/greetings', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
+      const res = await fetch("/api/greetings", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({
           holiday: slug,
           fromNames: fromInput.value,
           toNames: toInput.value,
           message: messageInput.value,
+          turnstileToken: token,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        if (data.errors) {
-          Object.entries(data.errors).forEach(([k, v]) => setError(k, String(v)));
+        resetTurnstile();
+        if (res.status === 429) {
+          formError.textContent =
+            data.error || "יותר מדי בקשות. נסו שוב בעוד רגע.";
+        } else if (data.errors) {
+          Object.entries(data.errors).forEach(([k, v]) =>
+            setError(k, String(v)),
+          );
+          formError.textContent = "בדקו את הפרטים ונסו שוב.";
         } else {
-          formError.textContent = data.error || 'אירעה שגיאה. נסו שוב.';
-          formError.hidden = false;
+          formError.textContent = data.error || "אירעה שגיאה. נסו שוב.";
         }
+        formError.hidden = false;
         return;
       }
-      const url: string = data.url;
-      resultUrl.value = url;
-      openBtn.href = url;
+
+      shareUrl = data.url;
+      openBtn.href = shareUrl;
+      waBtn.href =
+        "https://wa.me/?text=" + encodeURIComponent(whatsappMessage());
+      form.hidden = true;
       result.hidden = false;
-      result.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (navigator.share) shareBtn.hidden = false;
+      result.scrollIntoView({ behavior: "smooth", block: "center" });
+      if ("share" in navigator) shareBtn.hidden = false;
     } catch {
-      formError.textContent = 'בעיית תקשורת. בדקו את החיבור ונסו שוב.';
+      resetTurnstile();
+      formError.textContent = "בעיית תקשורת. בדקו את החיבור ונסו שוב.";
       formError.hidden = false;
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = submitBtn.dataset.defaultLabel || 'צרו קישור לשיתוף';
+      submitBtn.textContent =
+        submitBtn.dataset.defaultLabel || "יצירת הברכה 🎉";
     }
   });
 
-  copyBtn.addEventListener('click', async () => {
+  async function copyText(text: string): Promise<boolean> {
     try {
-      await navigator.clipboard.writeText(resultUrl.value);
-      copyBtn.textContent = 'הועתק ✓';
-      setTimeout(() => (copyBtn.textContent = 'העתקה'), 1800);
+      await navigator.clipboard.writeText(text);
+      return true;
     } catch {
-      resultUrl.select();
+      return false;
     }
+  }
+
+  waBtn.addEventListener("click", () => {
+    // Copy the message too, so it can be pasted if WhatsApp doesn't prefill.
+    copyText(whatsappMessage());
   });
 
-  shareBtn.addEventListener('click', () => {
-    navigator.share({ title: 'קיבלת ברכה 🎁', url: resultUrl.value }).catch(() => {});
+  copyBtn.addEventListener("click", async () => {
+    const ok = await copyText(whatsappMessage());
+    copyBtn.textContent = ok ? "ההודעה הועתקה ✓" : "לא הצלחנו להעתיק";
+    window.setTimeout(() => (copyBtn.textContent = "העתקת ההודעה"), 2000);
+  });
+
+  shareBtn.addEventListener("click", () => {
+    navigator
+      .share({ title: `ברכה ל${holidayName} 🎁`, text: whatsappMessage() })
+      .catch(() => {});
   });
 
   sync();
+  goToStep(1);
 </script>
 
 <style>
   .editor {
     padding: clamp(1.5rem, 5vw, 3rem) 0 4rem;
-    background: radial-gradient(1000px 400px at 90% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+    background: radial-gradient(
+      1000px 400px at 90% -10%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent
+    );
   }
 
   .crumbs {
     font-size: 0.9rem;
-    opacity: 0.75;
+    color: var(--text-muted);
     margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
   }
-  .crumbs a { text-decoration: none; }
+  .crumbs a {
+    text-decoration: none;
+    color: var(--brand);
+  }
 
   .editor-head h1 {
     margin: 0;
     font-size: clamp(1.9rem, 6vw, 3rem);
   }
-  .editor-head p { margin: 0.4rem 0 0; opacity: 0.9; }
+  .editor-head p {
+    margin: 0.4rem 0 0;
+    color: var(--text-muted);
+  }
 
   .editor-grid {
     display: grid;
@@ -314,46 +579,142 @@ const jsonLd = [
     align-items: start;
   }
   @media (min-width: 900px) {
-    .editor-grid { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); }
-    .preview-panel { position: sticky; top: 1.5rem; }
+    .editor-grid {
+      grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+    }
+    .preview-panel {
+      position: sticky;
+      top: 1.5rem;
+    }
   }
 
   .panel {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: clamp(1.1rem, 3vw, 1.75rem);
+    box-shadow: var(--shadow);
+  }
+  .compose {
+    display: grid;
+    gap: 1rem;
   }
 
-  .field { margin-bottom: 1.15rem; }
-  .field label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
-  .req { color: #ff9db1; }
-  .opt { opacity: 0.6; font-weight: 400; font-size: 0.85rem; }
+  /* progress */
+  .progress {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .progress-text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .dots {
+    display: flex;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .dot {
+    width: 28px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--border);
+    transition: background-color 0.2s ease;
+  }
+  .dot.is-active {
+    background: var(--brand);
+  }
 
-  input[type='text'],
+  /* steps */
+  .step {
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-inline-size: 0;
+  }
+  .step[hidden] {
+    display: none;
+  }
+  .step-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+    font-weight: 700;
+    padding: 0;
+    margin-bottom: 1rem;
+    letter-spacing: -0.015em;
+  }
+  .step label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+  .req {
+    color: var(--danger);
+  }
+  .opt {
+    color: var(--text-muted);
+    font-weight: 400;
+    font-size: 0.85rem;
+  }
+  .hint {
+    margin: 0.4rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  input[type="text"],
   textarea {
     width: 100%;
-    padding: 0.7rem 0.9rem;
+    padding: 0.8rem 0.9rem;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
     color: var(--page-ink);
     font: inherit;
     resize: vertical;
   }
-  input:focus, textarea:focus {
-    outline: 2px solid var(--accent);
+  input[type="text"] {
+    font-size: 1.05rem;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
+  input:focus,
+  textarea:focus {
+    outline: 2px solid var(--brand);
     outline-offset: 1px;
   }
-  .invalid { border-color: #ff6b81 !important; }
+  .invalid {
+    border-color: var(--danger) !important;
+  }
 
-  .counter { font-size: 0.8rem; opacity: 0.7; margin-top: 0.3rem; }
-  .counter.over { color: #ffb3b3; opacity: 1; font-weight: 700; }
+  .counter {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+  .counter.over {
+    color: var(--danger);
+    font-weight: 700;
+  }
 
-  .error { color: #ffb3b3; font-size: 0.85rem; margin: 0.35rem 0 0; }
+  .error {
+    color: var(--danger);
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0;
+    font-weight: 600;
+  }
   .form-error {
-    color: #ffb3b3;
-    background: rgba(255, 0, 0, 0.12);
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
     padding: 0.6rem 0.8rem;
     border-radius: 8px;
     margin-top: 1rem;
@@ -364,57 +725,117 @@ const jsonLd = [
     flex-wrap: wrap;
     gap: 0.4rem;
     align-items: center;
-    margin-top: 0.6rem;
+    margin-top: 0.7rem;
     font-size: 0.8rem;
-    opacity: 0.9;
+    color: var(--text-muted);
   }
   .chip {
-    border: 1px solid rgba(255, 255, 255, 0.25);
+    border: 1px solid var(--border);
     background: transparent;
-    color: inherit;
+    color: var(--page-ink);
     border-radius: 999px;
     padding: 0.3rem 0.7rem;
     font-size: 0.78rem;
   }
-  .chip:hover { background: rgba(255, 255, 255, 0.12); }
+  .chip:hover {
+    background: var(--hover);
+  }
 
-  .submit {
-    width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.85rem 1rem;
-    border: 0;
+  .turnstile {
+    margin: 1rem 0 0;
+    min-height: 65px;
+  }
+
+  /* nav buttons */
+  .step-nav {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.5rem;
+  }
+  .btn-primary,
+  .btn-ghost {
     border-radius: 12px;
-    background: var(--accent);
-    color: #1a1a1a;
+    padding: 0.8rem 1.3rem;
     font-weight: 800;
-    font-size: 1.05rem;
+    font-size: 1rem;
+    border: 1px solid transparent;
   }
-  .submit:hover { filter: brightness(1.05); }
-  .submit:disabled { opacity: 0.6; }
+  .btn-primary {
+    flex: 1;
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.06);
+  }
+  .btn-primary:disabled {
+    opacity: 0.6;
+  }
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--page-ink);
+  }
+  .btn-ghost:hover {
+    background: var(--hover);
+  }
 
-  .result {
-    margin-top: 1.2rem;
-    padding: 1rem;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+  /* result */
+  .result-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-family: var(--font-display);
   }
-  .result-title { margin: 0 0 0.6rem; font-weight: 700; }
-  .result-row { display: flex; gap: 0.5rem; }
-  .result-row input { flex: 1; }
-  #copy-btn {
-    border: 0; border-radius: 10px; padding: 0 1rem;
-    background: var(--accent); color: #1a1a1a; font-weight: 700; white-space: nowrap;
-  }
-  .result-actions { display: flex; gap: 1rem; margin-top: 0.7rem; font-size: 0.9rem; }
-  .result-actions a, #share-btn {
-    color: var(--accent); background: none; border: 0; text-decoration: underline; padding: 0;
+  .result-sub {
+    margin: 0.3rem 0 1.1rem;
+    color: var(--text-muted);
   }
 
-  .preview-label, .preview-panel .preview-label {
+  .wa-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.95rem 1rem;
+    border-radius: 14px;
+    background: #25d366;
+    color: #05300f;
+    font-weight: 800;
+    font-size: 1.1rem;
+    text-decoration: none;
+    box-shadow: 0 12px 30px -12px rgba(37, 211, 102, 0.6);
+  }
+  .wa-btn:hover {
+    filter: brightness(1.04);
+  }
+
+  .copy-btn {
+    width: 100%;
+    margin-top: 0.6rem;
+  }
+
+  .result-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+  }
+  .result-secondary a,
+  .result-secondary button {
+    color: var(--brand);
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    padding: 0;
+    font: inherit;
+  }
+
+  .preview-label {
     margin: 0 0 0.8rem;
     font-size: 0.85rem;
-    opacity: 0.7;
+    color: var(--text-muted);
     text-align: center;
   }
 
@@ -422,17 +843,36 @@ const jsonLd = [
     margin-top: clamp(2.5rem, 7vw, 4.5rem);
     max-width: 68ch;
   }
-  .about h2 { font-size: 1.5rem; }
-  .about h3 { font-size: 1.15rem; margin-top: 1.6rem; }
+  .about h2 {
+    font-size: 1.5rem;
+  }
+  .about h3 {
+    font-size: 1.15rem;
+    margin-top: 1.6rem;
+  }
   .symbols {
-    display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
   }
   .symbols li {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--hover);
+    border: 1px solid var(--border);
     border-radius: 999px;
     padding: 0.35rem 0.8rem;
     font-size: 0.9rem;
   }
-  .faq dt { font-weight: 700; margin-top: 0.9rem; }
-  .faq dd { margin: 0.2rem 0 0; opacity: 0.9; }
+  .faq dt {
+    font-weight: 700;
+    margin-top: 0.9rem;
+  }
+  .faq dd {
+    margin: 0.2rem 0 0;
+    color: var(--text-muted);
+  }
+  .about p {
+    color: var(--text-muted);
+  }
 </style>

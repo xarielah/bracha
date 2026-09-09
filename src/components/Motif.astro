@@ -4,7 +4,8 @@ export interface Props {
   class?: string;
 }
 const { slug, class: className } = Astro.props;
-// colors come from CSS custom props on an ancestor: --accent, --accent2, --ink
+const id = `mtf-${slug}`;
+// colors come from CSS custom props on an ancestor: --ink, --accent, --accent2
 ---
 
 <svg
@@ -15,134 +16,311 @@ const { slug, class: className } = Astro.props;
   fill="none"
   xmlns="http://www.w3.org/2000/svg"
 >
-  {
-    slug === 'rosh-hashana' && (
-      <g>
-        <circle cx="60" cy="66" r="30" fill="var(--accent)" />
-        <path d="M60 36c-4-10 4-18 12-18-2 8-4 14-12 18Z" fill="var(--accent2)" />
-        <path d="M46 30c14 6 22 18 22 34" stroke="var(--accent2)" stroke-width="5" stroke-linecap="round" />
-        <circle cx="52" cy="64" r="4" fill="var(--accent2)" opacity="0.5" />
-        <circle cx="70" cy="72" r="4" fill="var(--accent2)" opacity="0.5" />
-      </g>
-    )
-  }
-  {
-    slug === 'yom-kippur' && (
-      <g>
-        <rect x="54" y="34" width="12" height="52" rx="6" fill="var(--accent)" />
-        <path d="M60 24c5 6 5 12 0 16-5-4-5-10 0-16Z" fill="var(--accent2)" />
-        <ellipse cx="60" cy="98" rx="26" ry="8" fill="var(--accent)" opacity="0.35" />
-      </g>
-    )
-  }
-  {
-    slug === 'sukkot' && (
-      <g>
-        <path d="M24 54 60 34l36 20" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
-        <path d="M30 52h60M34 48l6-8M50 48l6-8M66 48l6-8M82 48l6-8" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" />
-        <rect x="34" y="54" width="6" height="40" fill="var(--accent2)" />
-        <rect x="80" y="54" width="6" height="40" fill="var(--accent2)" />
-        <path d="M62 58v34" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" />
-        <circle cx="52" cy="82" r="7" fill="var(--accent)" />
-      </g>
-    )
-  }
-  {
-    slug === 'simchat-torah' && (
-      <g>
-        <rect x="30" y="34" width="60" height="52" rx="8" fill="var(--accent)" />
-        <rect x="26" y="30" width="10" height="60" rx="5" fill="var(--accent2)" />
-        <rect x="84" y="30" width="10" height="60" rx="5" fill="var(--accent2)" />
-        <path d="M46 50h28M46 60h28M46 70h20" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
-      </g>
-    )
-  }
-  {
-    slug === 'hanukkah' && (
-      <g>
-        <path
-          d="M60 44v42M32 58v28M88 58v28M40 58v28M48 58v28M72 58v28M80 58v28"
-          stroke="var(--accent2)"
-          stroke-width="5"
-          stroke-linecap="round"
-        />
-        <path d="M28 90h64" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
-        {[32, 40, 48, 60, 72, 80, 88].map((x) => (
-          <path d={`M${x} 52c3 4 3 8 0 12-3-4-3-8 0-12Z`} fill="var(--accent)" />
-        ))}
-      </g>
-    )
-  }
-  {
-    slug === 'tu-bishvat' && (
-      <g>
-        <rect x="56" y="62" width="8" height="30" rx="4" fill="var(--accent2)" />
-        <circle cx="60" cy="48" r="24" fill="var(--accent)" />
-        <circle cx="46" cy="42" r="5" fill="var(--ink)" opacity="0.5" />
-        <circle cx="72" cy="52" r="5" fill="var(--ink)" opacity="0.5" />
-        <circle cx="60" cy="36" r="5" fill="var(--ink)" opacity="0.5" />
-      </g>
-    )
-  }
-  {
-    slug === 'purim' && (
-      <g>
-        <path d="M30 46c0-8 12-14 30-14s30 6 30 14c0 20-14 34-30 34S30 66 30 46Z" fill="var(--accent)" />
-        <circle cx="48" cy="50" r="6" fill="var(--accent2)" />
-        <circle cx="72" cy="50" r="6" fill="var(--accent2)" />
-        <path d="M46 66c8 6 20 6 28 0" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
-        <path d="M60 26v-8M40 30l-6-6M80 30l6-6" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
-      </g>
-    )
-  }
-  {
-    slug === 'pesach' && (
-      <g>
-        <rect x="34" y="34" width="52" height="52" rx="8" fill="var(--accent)" />
-        {[42, 54, 66, 78].map((y) =>
-          [42, 54, 66, 78].map((x) => <circle cx={x} cy={y} r="2.4" fill="var(--accent2)" />)
-        )}
-        <path d="M34 60h52M60 34v52" stroke="var(--accent2)" stroke-width="2" opacity="0.4" />
-      </g>
-    )
-  }
-  {
-    slug === 'yom-haatzmaut' && (
-      <g>
-        <rect x="30" y="36" width="60" height="48" rx="4" fill="var(--surface)" />
-        <path d="M30 46h60M30 74h60" stroke="var(--accent)" stroke-width="7" />
-        <path
-          d="M60 50l4.7 8.1H73l-6.6 5 2.5 8-8.9-5-8.9 5 2.5-8-6.6-5h8.3z"
-          fill="var(--accent)"
-        />
-      </g>
-    )
-  }
-  {
-    slug === 'lag-baomer' && (
-      <g>
-        <path d="M60 44c8 10 16 18 16 28a16 16 0 1 1-32 0c0-10 8-18 16-28Z" fill="var(--accent)" />
-        <path d="M60 58c4 6 8 10 8 16a8 8 0 1 1-16 0c0-6 4-10 8-16Z" fill="var(--accent2)" />
-        <path d="M30 92h60" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
-        <path d="M26 30l8 8M94 30l-8 8M60 22v10" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" />
-      </g>
-    )
-  }
-  {
-    slug === 'shavuot' && (
-      <g>
-        <path d="M34 84c0-14 12-24 26-24s26 10 26 24Z" fill="var(--accent)" />
-        <path d="M34 84h52" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
-        <path
-          d="M46 60c0-8-2-14-6-18 6 0 12 4 12 14M74 60c0-8 2-14 6-18-6 0-12 4-12 14M60 58V38"
-          stroke="var(--accent2)"
-          stroke-width="4"
-          stroke-linecap="round"
-        />
-        <circle cx="52" cy="72" r="4" fill="var(--accent2)" />
-        <circle cx="68" cy="72" r="4" fill="var(--accent2)" />
-        <circle cx="60" cy="78" r="4" fill="var(--accent2)" />
-      </g>
-    )
-  }
+  <defs>
+    <radialGradient id={`${id}-halo`} cx="42%" cy="36%" r="65%">
+      <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.55"></stop>
+      <stop offset="55%" stop-color="var(--accent)" stop-opacity="0.18"></stop>
+      <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+    </radialGradient>
+    <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"></stop>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"></stop>
+    </linearGradient>
+  </defs>
+
+  <circle cx="60" cy="58" r="52" fill={`url(#${id}-halo)`}></circle>
+  <circle
+    cx="60"
+    cy="58"
+    r="40"
+    fill="var(--accent)"
+    fill-opacity="0.14"
+    stroke="var(--ink)"
+    stroke-opacity="0.16"
+    stroke-width="1.5"></circle>
+  <path
+    d="M28 46a32 32 0 0 1 64 0Z"
+    fill={`url(#${id}-sheen)`}
+    opacity="0.7"></path>
+
+  <g
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    transform="translate(0 -2)"
+  >
+    {
+      slug === 'rosh-hashana' && (
+        <g>
+          <path
+            d="M55 44c-9-6-20-4-25 5-6 11-1 30 9 39 4 3 8 3 12 1 4 2 8 2 12-1 10-9 15-28 9-39-5-9-16-11-25-5z"
+            fill="var(--ink)"
+          />
+          <path
+            d="M55 44c0-6 1-10 4-13"
+            stroke="var(--ink)"
+            stroke-width="4"
+            fill="none"
+          />
+          <path
+            d="M56 34c1-8 8-13 17-13-1 9-8 15-17 13z"
+            fill="var(--accent)"
+          />
+          <path
+            d="M74 30 62 50"
+            stroke="var(--accent)"
+            stroke-width="4.5"
+          />
+          <path
+            d="M64 52c0 4-3 7-7 7s-7-3-7-7 7-11 7-11 7 7 7 11z"
+            fill="var(--accent)"
+          />
+          <ellipse cx="47" cy="55" rx="5" ry="8" fill="#fff" opacity="0.22" />
+        </g>
+      )
+    }
+    {
+      slug === 'yom-kippur' && (
+        <g>
+          <rect x="52" y="52" width="16" height="38" rx="5" fill="var(--ink)" />
+          <path d="M45 90h30l-5 8H50z" fill="var(--ink)" />
+          <path
+            d="M60 52c-9-7-9-17 0-27 9 10 9 20 0 27z"
+            fill="var(--accent)"
+          />
+          <ellipse cx="60" cy="38" rx="3.5" ry="7" fill="#fff" opacity="0.75" />
+        </g>
+      )
+    }
+    {
+      slug === 'sukkot' && (
+        <g>
+          <path
+            d="M30 54 60 37l30 17"
+            stroke="var(--ink)"
+            stroke-width="7"
+            fill="none"
+          />
+          <path
+            d="M40 48l5-9M53 47l5-9M66 47l5-9M79 48l5-9"
+            stroke="var(--accent)"
+            stroke-width="5"
+          />
+          <path d="M38 56v36M82 56v36" stroke="var(--ink)" stroke-width="7" />
+          <path d="M60 92V58" stroke="var(--ink)" stroke-width="5" />
+          <ellipse cx="50" cy="82" rx="8" ry="10" fill="var(--accent)" />
+        </g>
+      )
+    }
+    {
+      slug === 'simchat-torah' && (
+        <g>
+          <rect x="34" y="42" width="52" height="42" fill="var(--accent)" rx="2" />
+          <rect x="28" y="36" width="9" height="56" rx="4.5" fill="var(--ink)" />
+          <rect x="83" y="36" width="9" height="56" rx="4.5" fill="var(--ink)" />
+          <path
+            d="M46 54h28M46 63h28M46 72h18"
+            stroke="var(--ink)"
+            stroke-opacity="0.55"
+            stroke-width="3.5"
+          />
+          <path
+            d="M48 34l5-8 7 5 7-5 5 8z"
+            fill="var(--accent)"
+            stroke="var(--ink)"
+            stroke-width="2"
+          />
+        </g>
+      )
+    }
+    {
+      slug === 'hanukkah' && (
+        <g>
+          <path d="M46 90h28l-4 6H50z" fill="var(--ink)" />
+          <rect x="56" y="58" width="8" height="34" fill="var(--ink)" />
+          <path
+            d="M60 60 40 50M60 60 48 50M60 60 72 50M60 60 80 50"
+            stroke="var(--ink)"
+            stroke-width="5"
+          />
+          <path
+            d="M40 50v-7M48 50v-7M60 44v-10M72 50v-7M80 50v-7"
+            stroke="var(--ink)"
+            stroke-width="5"
+          />
+          {[
+            [40, 41],
+            [48, 41],
+            [60, 32],
+            [72, 41],
+            [80, 41],
+          ].map(([x, y]) => (
+            <path
+              d={`M${x} ${y}c3.5 4 3.5 9 0 13-3.5-4-3.5-9 0-13z`}
+              fill="var(--accent)"
+            />
+          ))}
+        </g>
+      )
+    }
+    {
+      slug === 'tu-bishvat' && (
+        <g>
+          <path d="M60 94V56" stroke="var(--ink)" stroke-width="6" />
+          <path
+            d="M60 70c-7 1-13-2-16-9 7-2 14 1 16 7M60 62c1-7 6-12 14-12 0 7-6 12-14 11"
+            stroke="var(--ink)"
+            stroke-width="4"
+            fill="none"
+          />
+          <circle cx="60" cy="42" r="21" fill="var(--ink)" />
+          {[
+            [52, 34],
+            [67, 33],
+            [45, 45],
+            [60, 48],
+            [72, 47],
+            [55, 55],
+          ].map(([x, y]) => (
+            <g>
+              <circle cx={x} cy={y} r="4.6" fill="#ef9bbd" />
+              <circle cx={x} cy={y} r="1.5" fill="#c94f7c" />
+            </g>
+          ))}
+          <circle cx="44" cy="66" r="3.2" fill="#ef9bbd" />
+          <circle cx="74" cy="72" r="3.2" fill="#ef9bbd" />
+        </g>
+      )
+    }
+    {
+      slug === 'purim' && (
+        <g>
+          <path
+            d="M30 46c0-8 12-13 30-13s30 5 30 13c0 18-13 33-30 33S30 64 30 46z"
+            fill="var(--accent)"
+          />
+          <path
+            d="M24 42l-6-4M96 42l6-4"
+            stroke="var(--ink)"
+            stroke-width="4"
+          />
+          <ellipse cx="47" cy="49" rx="7" ry="5.5" fill="var(--accent2)" />
+          <ellipse cx="73" cy="49" rx="7" ry="5.5" fill="var(--accent2)" />
+          <path
+            d="M46 64c8 6 20 6 28 0"
+            stroke="var(--accent2)"
+            stroke-width="4"
+            fill="none"
+          />
+          <path
+            d="M44 30l6 6 5-9 5 9 6-6"
+            stroke="var(--ink)"
+            stroke-width="4"
+            fill="none"
+          />
+          <circle cx="26" cy="66" r="3" fill="var(--ink)" />
+          <circle cx="94" cy="66" r="3" fill="var(--ink)" />
+        </g>
+      )
+    }
+    {
+      slug === 'pesach' && (
+        <g>
+          <rect
+            x="34"
+            y="34"
+            width="52"
+            height="52"
+            rx="12"
+            fill="var(--accent)"
+          />
+          {[44, 54, 64, 74].map((y) =>
+            [44, 54, 64, 74].map((x) => (
+              <circle cx={x} cy={y} r="2.6" fill="var(--accent2)" />
+            ))
+          )}
+          <path
+            d="M46 40c6 8 4 16 10 22s14 4 18 12"
+            stroke="var(--ink)"
+            stroke-opacity="0.4"
+            stroke-width="2.5"
+            fill="none"
+          />
+        </g>
+      )
+    }
+    {
+      slug === 'yom-haatzmaut' && (
+        <g>
+          <path d="M40 30v64" stroke="var(--ink)" stroke-width="5" />
+          <path d="M44 34h46v32H44z" fill="#ffffff" />
+          <path d="M44 40h46M44 60h46" stroke="var(--accent2)" stroke-width="6" />
+          <path
+            d="M67 43l6.1 10.5h-12.2zM67 57l6.1-10.5h-12.2z"
+            fill="none"
+            stroke="var(--accent2)"
+            stroke-width="3"
+          />
+        </g>
+      )
+    }
+    {
+      slug === 'lag-baomer' && (
+        <g>
+          <path
+            d="M60 30c11 15 19 24 19 37a19 19 0 0 1-38 0c0-13 8-22 19-37z"
+            fill="var(--accent)"
+          />
+          <path
+            d="M60 50c6 8 10 13 10 21a10 10 0 0 1-20 0c0-8 4-13 10-21z"
+            fill="#ffe4a3"
+          />
+          <path
+            d="M38 88l44-12M40 94l40-16"
+            stroke="var(--ink)"
+            stroke-width="6"
+          />
+          <circle cx="30" cy="44" r="3" fill="var(--accent)" />
+          <circle cx="92" cy="52" r="3" fill="var(--accent)" />
+          <circle cx="86" cy="30" r="2.5" fill="var(--ink)" />
+        </g>
+      )
+    }
+    {
+      slug === 'shavuot' && (
+        <g>
+          <path
+            d="M54 92c-1-20-3-34-4-46M60 92V40M66 92c1-20 3-34 4-46"
+            stroke="var(--ink)"
+            stroke-width="4"
+            fill="none"
+          />
+          {[
+            [54, 46, -1],
+            [60, 40, 0],
+            [66, 46, 1],
+          ].map(([x, y, dir]) => (
+            <g>
+              <ellipse
+                cx={x - 6 * dir}
+                cy={y}
+                rx="4"
+                ry="7"
+                fill="var(--accent)"
+                transform={`rotate(${-25 * dir} ${x - 6 * dir} ${y})`}
+              />
+              <ellipse
+                cx={x + 6 * dir}
+                cy={y + 8}
+                rx="4"
+                ry="7"
+                fill="var(--accent)"
+                transform={`rotate(${25 * dir} ${x + 6 * dir} ${y + 8})`}
+              />
+              <ellipse cx={x} cy={y - 8} rx="4" ry="7" fill="var(--accent)" />
+            </g>
+          ))}
+        </g>
+      )
+    }
+  </g>
 </svg>

@@ -81,15 +81,16 @@ const jsonLd = [
 <style>
   .hero {
     padding: clamp(3rem, 9vw, 6rem) 0 clamp(2rem, 5vw, 3rem);
-    background: radial-gradient(1200px 500px at 80% -10%, rgba(242, 193, 78, 0.25), transparent),
-      radial-gradient(900px 500px at 0% 0%, rgba(123, 47, 247, 0.22), transparent);
+    background: radial-gradient(1200px 500px at 80% -10%, var(--hero-glow-2), transparent),
+      radial-gradient(900px 500px at 0% 0%, var(--hero-glow-1), transparent);
   }
 
   .hero-kicker {
     margin: 0 0 0.5rem;
     letter-spacing: 0.14em;
     font-size: 0.85rem;
-    opacity: 0.75;
+    font-weight: 600;
+    color: var(--brand);
   }
 
   .hero h1 {
@@ -101,7 +102,7 @@ const jsonLd = [
     margin: 1rem 0 0;
     max-width: 60ch;
     font-size: clamp(1rem, 2.6vw, 1.25rem);
-    opacity: 0.92;
+    color: var(--text-muted);
   }
 
   .grid-title {
@@ -130,7 +131,9 @@ const jsonLd = [
 
   .site-footer {
     padding: 2.5rem 0;
-    opacity: 0.7;
+    color: var(--text-muted);
     font-size: 0.9rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
   }
 </style>
