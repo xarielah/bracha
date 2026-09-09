@@ -37,6 +37,7 @@ npx astro dev --background # ניהול: astro dev stop | status | logs
 | `PUBLIC_ADSENSE_CLIENT` | לא | מזהה מפרסם AdSense (`ca-pub-…`). ריק = ללא פרסומות |
 | `PUBLIC_ADSENSE_SLOT_CONTENT` | לא | מזהה יחידת מודעה בתוך התוכן (דף בית + דפי חג) |
 | `PUBLIC_ADSENSE_SLOT_GREETING` | לא | מזהה יחידת מודעה מתחת לברכה שנחשפה |
+| `PUBLIC_ADSENSE_DEBUG` | לא | `"1"` = placeholder נראה במקום כל יחידת מודעה |
 
 \* בפיתוח (`astro dev`) האימות מדלג כשאין מפתח סודי; בפרודקשן היעדר `TURNSTILE_SECRET_KEY`
 גורם לכל שליחה להיכשל (fail‑closed).
@@ -69,9 +70,33 @@ npx astro dev --background # ניהול: astro dev stop | status | logs
    ה‑`data-ad-slot` (מספר) אל `PUBLIC_ADSENSE_SLOT_CONTENT` ו‑`PUBLIC_ADSENSE_SLOT_GREETING`.
 
 מיקומים בקוד (`src/components/AdUnit.astro`): דף הבית אחרי הגריד, דפי החג לפני סקשן
-"על החג", ומתחת לברכה שנחשפה ב‑`/g/:id`. עמוד `/privacy` מתעדכן אוטומטית עם פסקת
-AdSense כשהפרסומות פעילות. ל‑`/g/:id` (תוכן דל, `noindex`) — אם AdSense מתלונן על
-"low value content", מסירים את ה‑`<AdUnit>` מ‑`src/pages/g/[id].astro`.
+"על החג", ומתחת לברכה שנחשפה ב‑`/g/:id`. ה‑`push()` של כל יחידה רץ **בעצלתיים**
+(IntersectionObserver) — נורה רק כשהיחידה נכנסת ל‑viewport עם רוחב > 0, כך שגם
+יחידות מתחת לקיפול ובתוך אזורים שנחשפים בלחיצה מתמלאות. עמוד `/privacy` מתעדכן
+אוטומטית עם פסקת AdSense כשהפרסומות פעילות. ל‑`/g/:id` (תוכן דל, `noindex`) — אם
+AdSense מתלונן על "low value content", מסירים את ה‑`<AdUnit>` מ‑`src/pages/g/[id].astro`.
+
+### למה עדיין אין פרסומות?
+
+- **האתר ב‑AdSense במצב "Getting ready" / בבדיקה** — גוגל מאשרת את האתר (ימים עד
+  ~שבועיים). **עד אישור לא מוצגות פרסומות בכלל**, ואין מה לתקן בקוד. בודקים ב‑
+  AdSense → Sites.
+- **פרסומות לרוב לא מוצגות ב‑`localhost` ובסביבות preview** של Vercel.
+- מוגדר רק `PUBLIC_ADSENSE_CLIENT` בלי slots ובלי Auto Ads → אחרי אישור עדיין לא
+  יופיע כלום. בוחרים אחת:
+  - **Auto Ads**: מפעילים בלוח הבקרה של AdSense → הסקריפט הקיים מספיק, בלי slots.
+  - **יחידות ידניות**: יוצרים ad units, מעתיקים את מספרי ה‑`data-ad-slot` אל
+    `PUBLIC_ADSENSE_SLOT_CONTENT` / `PUBLIC_ADSENSE_SLOT_GREETING` ב‑Vercel
+    **Production**, ומריצים **redeploy** (משתני `PUBLIC_*` נצרבים ב‑build).
+
+### אימות שהחיווט תקין
+
+1. `view-source` בדומיין החי → קיימים `adsbygoogle.js?client=ca-pub-…` ו‑
+   `<meta name="google-adsense-account">`.
+2. `https://<domain>/ads.txt` מחזיר `google.com, pub-…, DIRECT, f08c47fec0942fa0`
+   (לא ה‑placeholder — אחרת המשתנה חסר ב‑Vercel Production).
+3. `PUBLIC_ADSENSE_DEBUG="1"` → כל `<AdUnit>` מרונדרת כקופסה מקווקוות עם מזהה
+   הסלוט, כדי לאמת מיקומים לפני אישור/מילוי.
 
 > הערה: לעמידה מלאה ב‑GDPR/CCPA ייתכן שתידרש הטמעת CMP (מסך הסכמה לעוגיות).
 

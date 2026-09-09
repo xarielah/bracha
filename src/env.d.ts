@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly PUBLIC_ADSENSE_CLIENT?: string;
   readonly PUBLIC_ADSENSE_SLOT_CONTENT?: string;
   readonly PUBLIC_ADSENSE_SLOT_GREETING?: string;
+  readonly PUBLIC_ADSENSE_DEBUG?: string;
 }
 
 interface ImportMeta {

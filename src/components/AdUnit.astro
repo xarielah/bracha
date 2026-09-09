@@ -1,8 +1,8 @@
 ---
-import { ADSENSE_CLIENT, adsenseEnabled } from '../lib/ads';
+import { ADSENSE_CLIENT, adsenseEnabled, ADSENSE_DEBUG } from '../lib/ads';
 
 export interface Props {
-  /** AdSense ad-unit id (data-ad-slot). Nothing renders without it. */
+  /** AdSense ad-unit id (data-ad-slot). Required in production. */
   slot?: string;
   /** data-ad-format */
   format?: string;
@@ -20,11 +20,14 @@ const {
   label = 'פרסומת',
 } = Astro.props;
 
-const show = adsenseEnabled && Boolean(slot);
+// Production: render only with a real client + slot.
+// Debug: always render a placeholder so placements are visible pre-approval.
+const showReal = adsenseEnabled && Boolean(slot) && !ADSENSE_DEBUG;
+const showDebug = ADSENSE_DEBUG;
 ---
 
 {
-  show && (
+  showReal && (
     <aside class:list={['ad', className]} aria-label="פרסומת">
       <span class="ad-label">{label}</span>
       <ins
@@ -37,8 +40,50 @@ const show = adsenseEnabled && Boolean(slot);
         data-full-width-responsive="true"
       />
       <script is:inline>
-        (adsbygoogle = window.adsbygoogle || []).push({});
+        (function () {
+          var s = document.currentScript;
+          var ins = s && s.previousElementSibling;
+          if (!ins) return;
+          var pushed = false;
+          function fill() {
+            if (pushed) return;
+            if (!ins.clientWidth) return;
+            pushed = true;
+            try {
+              (adsbygoogle = window.adsbygoogle || []).push({});
+            } catch (e) {}
+          }
+          if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(
+              function (entries) {
+                entries.forEach(function (entry) {
+                  if (entry.isIntersecting) {
+                    fill();
+                    if (pushed) io.disconnect();
+                  }
+                });
+              },
+              { rootMargin: '250px' }
+            );
+            io.observe(ins);
+          } else {
+            fill();
+          }
+        })();
       </script>
+    </aside>
+  )
+}
+
+{
+  showDebug && (
+    <aside class:list={['ad', 'ad--debug', className]} aria-label="פרסומת (מצב בדיקה)">
+      <span class="ad-label">{label} · מצב בדיקה</span>
+      <div class="ad-placeholder">
+        {adsenseEnabled ? ADSENSE_CLIENT : 'client לא מוגדר'}
+        <br />
+        slot: {slot || 'ריק → Auto Ads בלבד'}
+      </div>
     </aside>
   )
 }
@@ -51,7 +96,7 @@ const show = adsenseEnabled && Boolean(slot);
     text-align: center;
   }
 
-  .ad:has(.adsbygoogle[data-ad-status='unfilled']) {
+  .ad:not(.ad--debug):has(.adsbygoogle[data-ad-status='unfilled']) {
     display: none;
   }
 
@@ -67,5 +112,18 @@ const show = adsenseEnabled && Boolean(slot);
     display: block;
     border-radius: 12px;
     overflow: hidden;
+  }
+
+  .ad-placeholder {
+    display: grid;
+    place-content: center;
+    min-height: 120px;
+    padding: 1rem;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    word-break: break-all;
   }
 </style>

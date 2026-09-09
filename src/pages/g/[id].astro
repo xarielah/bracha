@@ -6,6 +6,7 @@ import { getGreetingsCollection } from '../../lib/mongo';
 import NotFound from '../../components/NotFound.astro';
 import AdUnit from '../../components/AdUnit.astro';
 import { AD_SLOTS } from '../../lib/ads';
+import { getMusicTrack } from '../../data/music';
 
 export const prerender = false;
 
@@ -22,6 +23,7 @@ if (id && /^[0-9A-Za-z]{6,16}$/.test(id)) {
 }
 
 const holiday = doc ? getHoliday(doc.holiday) : undefined;
+const track = holiday ? getMusicTrack(holiday.slug) : null;
 
 if (!doc || !holiday) {
   Astro.response.status = 404;
@@ -48,6 +50,39 @@ if (!doc || !holiday) {
       noindex={true}
     >
       <main class="reveal-page" data-holiday={holiday.slug}>
+    {track && (
+      <>
+        {track.kind === 'file' ? (
+          <audio
+            id="bg-music"
+            src={track.src}
+            loop
+            preload="none"
+            data-volume={track.volume}
+          />
+        ) : (
+          <div class="bg-music-yt" aria-hidden="true">
+            <div
+              id="bg-music-yt"
+              data-video-id={track.youTubeId}
+              data-volume={track.volume}
+            />
+          </div>
+        )}
+        <button
+          type="button"
+          id="music-toggle"
+          class="music-toggle"
+          hidden
+          aria-pressed="true"
+          title={track.title}
+          aria-label={`השתקה או הפעלה של ${track.title}`}
+        >
+          <span class="music-toggle-icon" aria-hidden="true">🔊</span>
+        </button>
+      </>
+    )}
+
     <section class="teaser" id="teaser">
       <div class="teaser-inner">
         <p class="teaser-emoji" aria-hidden="true">🎁</p>
@@ -91,8 +126,204 @@ if (!doc || !holiday) {
     celebrate(host, falling, { burst: 30, duration: 4500 });
   }
 
+  /* ---------- background music (local file OR audio-only YouTube) ---------- */
+  const musicToggle = document.querySelector<HTMLButtonElement>('#music-toggle');
+  const MUSIC_PREF_KEY = 'greeting-music-muted';
+
+  /** Minimal play/pause surface shared by the <audio> and YouTube backends. */
+  interface MusicPlayer {
+    play(): void;
+    pause(): void;
+    isPlaying(): boolean;
+    onChange(cb: () => void): void;
+    /** true once we know the source can't be played (bad file / video) */
+    isDead(): boolean;
+  }
+
+  function musicMuted(): boolean {
+    try {
+      return localStorage.getItem(MUSIC_PREF_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+  function rememberMuted(muted: boolean) {
+    try {
+      localStorage.setItem(MUSIC_PREF_KEY, muted ? '1' : '0');
+    } catch {
+      /* storage blocked */
+    }
+  }
+
+  function clampVol(raw: string | undefined): number {
+    const v = Number(raw);
+    return Number.isFinite(v) && v > 0 ? Math.min(v, 1) : 0.5;
+  }
+
+  function createAudioPlayer(el: HTMLAudioElement): MusicPlayer {
+    el.volume = clampVol(el.dataset.volume);
+    let dead = false;
+    el.addEventListener('error', () => {
+      dead = true;
+    });
+    return {
+      play: () => void el.play().catch(() => {}),
+      pause: () => el.pause(),
+      isPlaying: () => !el.paused,
+      onChange: (cb) => {
+        el.addEventListener('play', cb);
+        el.addEventListener('pause', cb);
+        el.addEventListener('error', cb);
+      },
+      isDead: () => dead || !!el.error,
+    };
+  }
+
+  function createYouTubePlayer(el: HTMLElement): MusicPlayer {
+    const videoId = el.dataset.videoId || '';
+    const volume = clampVol(el.dataset.volume);
+    let yt: any = null;
+    let ready = false;
+    let dead = false;
+    let wantPlaying = false;
+    let playing = false;
+    let changeCb: () => void = () => {};
+
+    interface YTWindow {
+      YT?: { Player: new (e: HTMLElement, o: unknown) => unknown };
+      onYouTubeIframeAPIReady?: () => void;
+    }
+    const w = window as unknown as YTWindow;
+
+    function build() {
+      yt = new (w.YT as any).Player(el, {
+        videoId,
+        host: 'https://www.youtube-nocookie.com',
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          playsinline: 1,
+          modestbranding: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: () => {
+            ready = true;
+            try {
+              yt.setVolume(Math.round(volume * 100));
+              yt.setLoop?.(true);
+            } catch {
+              /* noop */
+            }
+            if (wantPlaying) yt.playVideo();
+            changeCb();
+          },
+          onStateChange: (ev: { data: number }) => {
+            playing = ev.data === 1 || ev.data === 3; // PLAYING or BUFFERING
+            // 0 = ended → loop it manually (setLoop needs a playlist to work)
+            if (ev.data === 0 && wantPlaying) {
+              try {
+                yt.seekTo(0);
+                yt.playVideo();
+              } catch {
+                /* noop */
+              }
+            }
+            changeCb();
+          },
+          onError: () => {
+            dead = true;
+            changeCb();
+          },
+        },
+      });
+    }
+
+    function ensureApi() {
+      if (w.YT && (w.YT as any).Player) {
+        build();
+        return;
+      }
+      const prev = w.onYouTubeIframeAPIReady;
+      w.onYouTubeIframeAPIReady = () => {
+        prev?.();
+        build();
+      };
+      if (!document.querySelector('script[data-yt-iframe-api]')) {
+        const tag = document.createElement('script');
+        tag.src = 'https://www.youtube.com/iframe_api';
+        tag.async = true;
+        tag.dataset.ytIframeApi = 'true';
+        document.head.appendChild(tag);
+      }
+    }
+    ensureApi();
+
+    return {
+      play: () => {
+        wantPlaying = true;
+        if (ready && yt) yt.playVideo();
+      },
+      pause: () => {
+        wantPlaying = false;
+        playing = false;
+        if (ready && yt) yt.pauseVideo();
+      },
+      // before the player is ready, reflect intent so the toggle looks right
+      isPlaying: () => !dead && (ready ? playing : wantPlaying),
+      onChange: (cb) => {
+        changeCb = cb;
+      },
+      isDead: () => dead,
+    };
+  }
+
+  const audioEl = document.querySelector<HTMLAudioElement>('#bg-music');
+  const ytEl = document.querySelector<HTMLElement>('#bg-music-yt');
+  const player: MusicPlayer | null = audioEl
+    ? createAudioPlayer(audioEl)
+    : ytEl
+      ? createYouTubePlayer(ytEl)
+      : null;
+
+  function renderMusicToggle() {
+    if (!musicToggle || !player) return;
+    if (player.isDead()) {
+      musicToggle.hidden = true;
+      return;
+    }
+    const on = player.isPlaying();
+    musicToggle.setAttribute('aria-pressed', String(on));
+    const icon = musicToggle.querySelector('.music-toggle-icon');
+    if (icon) icon.textContent = on ? '🔊' : '🔇';
+  }
+
+  function startMusic() {
+    if (!player) return;
+    if (musicToggle) musicToggle.hidden = false;
+    if (!musicMuted()) player.play();
+    renderMusicToggle();
+  }
+
+  player?.onChange(renderMusicToggle);
+
+  musicToggle?.addEventListener('click', () => {
+    if (!player) return;
+    if (player.isPlaying()) {
+      player.pause();
+      rememberMuted(true);
+    } else {
+      player.play();
+      rememberMuted(false);
+    }
+    renderMusicToggle();
+  });
+
   revealBtn.addEventListener('click', () => {
     teaser.classList.add('gone');
+    startMusic();
     setTimeout(() => {
       teaser.hidden = true;
       revealed.hidden = false;
@@ -140,6 +371,43 @@ if (!doc || !holiday) {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
   }
+
+  /* audio-only: the YouTube player must stay in the DOM & rendered (not
+     display:none, which some browsers treat as a reason to pause), just
+     pushed out of sight and non-interactive. */
+  .bg-music-yt {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    inset-block-start: -9999px;
+    inset-inline-start: -9999px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .bg-music-yt :global(iframe) {
+    width: 1px;
+    height: 1px;
+  }
+
+  .music-toggle {
+    position: fixed;
+    inset-block-end: 1rem;
+    inset-inline-end: 1rem;
+    z-index: 50;
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    font-size: 1.15rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+    transition: transform 0.15s ease;
+  }
+  .music-toggle:hover { transform: scale(1.08); }
 
   .revealed { width: 100%; max-width: 640px; }
   .revealed.in { animation: pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
