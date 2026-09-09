@@ -1,0 +1,438 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GreetingCard from '../../components/GreetingCard.astro';
+import { holidays, getHoliday } from '../../data/holidays';
+import { MESSAGE_MAX_WORDS } from '../../lib/greeting';
+
+export function getStaticPaths() {
+  return holidays.map((h) => ({ params: { holiday: h.slug } }));
+}
+
+const { holiday: slug } = Astro.params;
+const holiday = getHoliday(slug);
+if (!holiday) return Astro.redirect('/404');
+
+const site = Astro.site ?? new URL('http://localhost:4321');
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'ברכות לחגי ישראל', item: site.href },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: `ברכות ל${holiday.name}`,
+        item: new URL(`/${holiday.slug}`, site).href,
+      },
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: holiday.faq.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title={holiday.seoTitle}
+  description={holiday.seoDescription}
+  path={`/${holiday.slug}`}
+  keywords={holiday.keywords}
+  jsonLd={jsonLd}
+>
+  <div class="editor" data-holiday={holiday.slug} data-slug={holiday.slug}>
+    <div class="container">
+      <nav class="crumbs" aria-label="פירורי לחם">
+        <a href="/">כל החגים</a> <span aria-hidden="true">/</span>
+        <span>{holiday.name}</span>
+      </nav>
+
+      <header class="editor-head">
+        <h1>ברכה ל{holiday.name}</h1>
+        <p>{holiday.tagline}. מלאו את הפרטים – והברכה מתעדכנת מולכם בזמן אמת.</p>
+      </header>
+
+      <div class="editor-grid">
+        <form class="panel" id="greeting-form" novalidate>
+          <div class="field">
+            <label for="fromNames">מאת <span class="req">*</span></label>
+            <input
+              id="fromNames"
+              name="fromNames"
+              type="text"
+              required
+              autocomplete="off"
+              placeholder="לדוגמה: משפחת כהן / דנה ויוסי"
+            />
+            <p class="error" data-error-for="fromNames" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="toNames">אל <span class="req">*</span></label>
+            <input
+              id="toNames"
+              name="toNames"
+              type="text"
+              required
+              autocomplete="off"
+              placeholder="לדוגמה: סבתא רבקה / כל המשפחה"
+            />
+            <p class="error" data-error-for="toNames" hidden></p>
+          </div>
+
+          <div class="field">
+            <label for="message">
+              מלל אישי <span class="opt">(לא חובה)</span>
+            </label>
+            <textarea
+              id="message"
+              name="message"
+              rows="5"
+              placeholder={holiday.greetingOpeners[0]}
+              maxlength="800"></textarea>
+            <div class="counter">
+              <span data-word-count>0</span> / {MESSAGE_MAX_WORDS} מילים
+            </div>
+            <p class="error" data-error-for="message" hidden></p>
+            <div class="suggestions">
+              <span>רעיונות:</span>
+              {
+                holiday.greetingOpeners.map((s) => (
+                  <button type="button" class="chip" data-suggestion={s}>
+                    {s.length > 42 ? s.slice(0, 42) + '…' : s}
+                  </button>
+                ))
+              }
+            </div>
+          </div>
+
+          <button type="submit" class="submit" data-default-label="צרו קישור לשיתוף">
+            צרו קישור לשיתוף
+          </button>
+
+          <div class="result" id="result" hidden>
+            <p class="result-title">🎉 הברכה מוכנה! שתפו את הקישור:</p>
+            <div class="result-row">
+              <input id="result-url" type="text" readonly />
+              <button type="button" id="copy-btn">העתקה</button>
+            </div>
+            <div class="result-actions">
+              <a id="open-btn" href="#" target="_blank" rel="noopener">פתיחת הברכה</a>
+              <button type="button" id="share-btn" hidden>שיתוף…</button>
+            </div>
+          </div>
+
+          <p class="form-error" id="form-error" hidden></p>
+        </form>
+
+        <div class="panel preview-panel">
+          <p class="preview-label">תצוגה מקדימה — כך הנמען יראה את הברכה</p>
+          <div id="preview">
+            <GreetingCard holiday={holiday} />
+          </div>
+        </div>
+      </div>
+
+      <section class="about">
+        <h2>על החג ועל הסממנים שלו</h2>
+        {holiday.about.map((para) => <p>{para}</p>)}
+        <h3>סממנים דומיננטיים של {holiday.name}</h3>
+        <ul class="symbols">
+          {holiday.symbols.map((s) => <li>{s}</li>)}
+        </ul>
+        <h3>שאלות נפוצות</h3>
+        <dl class="faq">
+          {
+            holiday.faq.map((f) => (
+              <>
+                <dt>{f.q}</dt>
+                <dd>{f.a}</dd>
+              </>
+            ))
+          }
+        </dl>
+      </section>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { countWords } from '../../lib/greeting';
+
+  const root = document.querySelector<HTMLElement>('.editor')!;
+  const slug = root.dataset.slug!;
+  const form = document.querySelector<HTMLFormElement>('#greeting-form')!;
+  const preview = document.querySelector<HTMLElement>('#preview')!;
+  const gcTo = preview.querySelector<HTMLElement>('.gc-to')!;
+  const gcFrom = preview.querySelector<HTMLElement>('.gc-from-names')!;
+  const gcMessage = preview.querySelector<HTMLElement>('.gc-message')!;
+  const messagePlaceholder = gcMessage.dataset.placeholder || '';
+
+  const fromInput = form.elements.namedItem('fromNames') as HTMLInputElement;
+  const toInput = form.elements.namedItem('toNames') as HTMLInputElement;
+  const messageInput = form.elements.namedItem('message') as HTMLTextAreaElement;
+  const wordCount = document.querySelector<HTMLElement>('[data-word-count]')!;
+  const counter = document.querySelector<HTMLElement>('.counter')!;
+  const MAX_WORDS = 60;
+
+  function sync() {
+    gcTo.textContent = toInput.value.trim() || (gcTo.dataset.empty ?? '');
+    gcFrom.textContent = fromInput.value.trim() || (gcFrom.dataset.empty ?? '');
+    const msg = messageInput.value.trim();
+    gcMessage.textContent = msg || messagePlaceholder;
+    const n = countWords(messageInput.value);
+    wordCount.textContent = String(n);
+    counter.classList.toggle('over', n > MAX_WORDS);
+  }
+
+  [fromInput, toInput, messageInput].forEach((el) =>
+    el.addEventListener('input', sync)
+  );
+
+  document.querySelectorAll<HTMLButtonElement>('.chip').forEach((chip) => {
+    chip.addEventListener('click', () => {
+      messageInput.value = chip.dataset.suggestion || '';
+      sync();
+      messageInput.focus();
+    });
+  });
+
+  function setError(name: string, msg: string | null) {
+    const el = document.querySelector<HTMLElement>(`[data-error-for="${name}"]`);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.hidden = !msg;
+    form.querySelector(`[name="${name}"]`)?.classList.toggle('invalid', !!msg);
+  }
+
+  const result = document.querySelector<HTMLElement>('#result')!;
+  const resultUrl = document.querySelector<HTMLInputElement>('#result-url')!;
+  const openBtn = document.querySelector<HTMLAnchorElement>('#open-btn')!;
+  const copyBtn = document.querySelector<HTMLButtonElement>('#copy-btn')!;
+  const shareBtn = document.querySelector<HTMLButtonElement>('#share-btn')!;
+  const submitBtn = form.querySelector<HTMLButtonElement>('.submit')!;
+  const formError = document.querySelector<HTMLElement>('#form-error')!;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    ['fromNames', 'toNames', 'message'].forEach((n) => setError(n, null));
+    formError.hidden = true;
+
+    let hasError = false;
+    if (!fromInput.value.trim()) { setError('fromNames', 'יש למלא שם'); hasError = true; }
+    if (!toInput.value.trim()) { setError('toNames', 'יש למלא שם'); hasError = true; }
+    if (countWords(messageInput.value) > MAX_WORDS) {
+      setError('message', `עד ${MAX_WORDS} מילים`); hasError = true;
+    }
+    if (hasError) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'יוצר…';
+    try {
+      const res = await fetch('/api/greetings', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          holiday: slug,
+          fromNames: fromInput.value,
+          toNames: toInput.value,
+          message: messageInput.value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.errors) {
+          Object.entries(data.errors).forEach(([k, v]) => setError(k, String(v)));
+        } else {
+          formError.textContent = data.error || 'אירעה שגיאה. נסו שוב.';
+          formError.hidden = false;
+        }
+        return;
+      }
+      const url: string = data.url;
+      resultUrl.value = url;
+      openBtn.href = url;
+      result.hidden = false;
+      result.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (navigator.share) shareBtn.hidden = false;
+    } catch {
+      formError.textContent = 'בעיית תקשורת. בדקו את החיבור ונסו שוב.';
+      formError.hidden = false;
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = submitBtn.dataset.defaultLabel || 'צרו קישור לשיתוף';
+    }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(resultUrl.value);
+      copyBtn.textContent = 'הועתק ✓';
+      setTimeout(() => (copyBtn.textContent = 'העתקה'), 1800);
+    } catch {
+      resultUrl.select();
+    }
+  });
+
+  shareBtn.addEventListener('click', () => {
+    navigator.share({ title: 'קיבלת ברכה 🎁', url: resultUrl.value }).catch(() => {});
+  });
+
+  sync();
+</script>
+
+<style>
+  .editor {
+    padding: clamp(1.5rem, 5vw, 3rem) 0 4rem;
+    background: radial-gradient(1000px 400px at 90% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+  }
+
+  .crumbs {
+    font-size: 0.9rem;
+    opacity: 0.75;
+    margin-bottom: 1rem;
+  }
+  .crumbs a { text-decoration: none; }
+
+  .editor-head h1 {
+    margin: 0;
+    font-size: clamp(1.9rem, 6vw, 3rem);
+  }
+  .editor-head p { margin: 0.4rem 0 0; opacity: 0.9; }
+
+  .editor-grid {
+    display: grid;
+    gap: clamp(1rem, 3vw, 2rem);
+    margin-top: clamp(1.5rem, 4vw, 2.5rem);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .editor-grid { grid-template-columns: minmax(0, 420px) minmax(0, 1fr); }
+    .preview-panel { position: sticky; top: 1.5rem; }
+  }
+
+  .panel {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius);
+    padding: clamp(1.1rem, 3vw, 1.75rem);
+  }
+
+  .field { margin-bottom: 1.15rem; }
+  .field label { display: block; font-weight: 700; margin-bottom: 0.4rem; }
+  .req { color: #ff9db1; }
+  .opt { opacity: 0.6; font-weight: 400; font-size: 0.85rem; }
+
+  input[type='text'],
+  textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--page-ink);
+    font: inherit;
+    resize: vertical;
+  }
+  input:focus, textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .invalid { border-color: #ff6b81 !important; }
+
+  .counter { font-size: 0.8rem; opacity: 0.7; margin-top: 0.3rem; }
+  .counter.over { color: #ffb3b3; opacity: 1; font-weight: 700; }
+
+  .error { color: #ffb3b3; font-size: 0.85rem; margin: 0.35rem 0 0; }
+  .form-error {
+    color: #ffb3b3;
+    background: rgba(255, 0, 0, 0.12);
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+  }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    opacity: 0.9;
+  }
+  .chip {
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: inherit;
+    border-radius: 999px;
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+  }
+  .chip:hover { background: rgba(255, 255, 255, 0.12); }
+
+  .submit {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.85rem 1rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #1a1a1a;
+    font-weight: 800;
+    font-size: 1.05rem;
+  }
+  .submit:hover { filter: brightness(1.05); }
+  .submit:disabled { opacity: 0.6; }
+
+  .result {
+    margin-top: 1.2rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+  .result-title { margin: 0 0 0.6rem; font-weight: 700; }
+  .result-row { display: flex; gap: 0.5rem; }
+  .result-row input { flex: 1; }
+  #copy-btn {
+    border: 0; border-radius: 10px; padding: 0 1rem;
+    background: var(--accent); color: #1a1a1a; font-weight: 700; white-space: nowrap;
+  }
+  .result-actions { display: flex; gap: 1rem; margin-top: 0.7rem; font-size: 0.9rem; }
+  .result-actions a, #share-btn {
+    color: var(--accent); background: none; border: 0; text-decoration: underline; padding: 0;
+  }
+
+  .preview-label, .preview-panel .preview-label {
+    margin: 0 0 0.8rem;
+    font-size: 0.85rem;
+    opacity: 0.7;
+    text-align: center;
+  }
+
+  .about {
+    margin-top: clamp(2.5rem, 7vw, 4.5rem);
+    max-width: 68ch;
+  }
+  .about h2 { font-size: 1.5rem; }
+  .about h3 { font-size: 1.15rem; margin-top: 1.6rem; }
+  .symbols {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0;
+  }
+  .symbols li {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.9rem;
+  }
+  .faq dt { font-weight: 700; margin-top: 0.9rem; }
+  .faq dd { margin: 0.2rem 0 0; opacity: 0.9; }
+</style>

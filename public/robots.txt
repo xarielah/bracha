@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /g/
+Disallow: /api/
+
+Sitemap: https://bracha.vercel.app/sitemap-index.xml

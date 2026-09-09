@@ -1,11 +1,136 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import HolidayCard from '../components/HolidayCard.astro';
+import { holidays } from '../data/holidays';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const site = Astro.site ?? new URL('http://localhost:4321');
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'ברכות לחגי ישראל',
+    url: site.href,
+    inLanguage: 'he-IL',
+    description:
+      'יצירת ברכות אישיות, אינטראקטיביות ומעוצבות לכל חגי ישראל, ושיתוף שלהן בקישור אחד.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'חגי ישראל',
+    itemListElement: holidays.map((h, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: `ברכות ל${h.name}`,
+      url: new URL(`/${h.slug}`, site).href,
+    })),
+  },
+];
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<BaseLayout
+  title="ברכות לחגי ישראל – צרו ברכה אישית ואינטראקטיבית לשיתוף בקישור"
+  description="בחרו חג ישראלי, הזינו שמות ומלל אישי, וקבלו ברכה מעוצבת ואינטראקטיבית לשיתוף בקישור אחד. ראש השנה, חנוכה, פורים, פסח, שבועות ועוד."
+  path="/"
+  keywords={['ברכות לחגים', 'ברכות לחגי ישראל', 'כרטיס ברכה דיגיטלי', 'ברכה אישית', 'ברכה אינטראקטיבית']}
+  jsonLd={jsonLd}
+>
+  <header class="hero">
+    <div class="container">
+      <p class="hero-kicker">ברכות דיגיטליות לחגי ישראל</p>
+      <h1>שלחו ברכה שגורמת לחיוך</h1>
+      <p class="hero-lead">
+        בוחרים חג, מזינים את שם המברך/ת ואת שם המבורך/ת, מוסיפים מלל אישי –
+        ומקבלים ברכה מעוצבת ואינטראקטיבית לפי הסממנים של החג. משתפים בקישור אחד,
+        וכל מי שפותח אותו זוכה להפתעה קטנה.
+      </p>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2 class="grid-title">בחרו חג</h2>
+    <ul class="holiday-grid" role="list">
+      {
+        holidays.map((h) => (
+          <li>
+            <HolidayCard holiday={h} />
+          </li>
+        ))
+      }
+    </ul>
+
+    <section class="how">
+      <h2>איך זה עובד?</h2>
+      <ol>
+        <li><strong>בוחרים חג</strong> מתוך לוח החגים למעלה.</li>
+        <li><strong>ממלאים שמות ומלל</strong> – ורואים את הברכה מתעדכנת בזמן אמת.</li>
+        <li><strong>יוצרים קישור</strong> ומשתפים בוואטסאפ, במייל או ברשתות.</li>
+        <li>הנמען פותח, לוחץ <em>"לחצו כדי לחשוף את הברכה"</em> – ומקבל ברכה חגיגית.</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>ברכות לחגי ישראל · נבנה באהבה לכל חג ומועד</p>
+    </div>
+  </footer>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: clamp(3rem, 9vw, 6rem) 0 clamp(2rem, 5vw, 3rem);
+    background: radial-gradient(1200px 500px at 80% -10%, rgba(242, 193, 78, 0.25), transparent),
+      radial-gradient(900px 500px at 0% 0%, rgba(123, 47, 247, 0.22), transparent);
+  }
+
+  .hero-kicker {
+    margin: 0 0 0.5rem;
+    letter-spacing: 0.14em;
+    font-size: 0.85rem;
+    opacity: 0.75;
+  }
+
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(2.2rem, 7vw, 4rem);
+  }
+
+  .hero-lead {
+    margin: 1rem 0 0;
+    max-width: 60ch;
+    font-size: clamp(1rem, 2.6vw, 1.25rem);
+    opacity: 0.92;
+  }
+
+  .grid-title {
+    margin: clamp(1.5rem, 4vw, 2.5rem) 0 1rem;
+    font-size: 1.4rem;
+  }
+
+  .holiday-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(0.8rem, 2vw, 1.4rem);
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+
+  .how {
+    margin: clamp(3rem, 8vw, 5rem) 0;
+    max-width: 65ch;
+  }
+
+  .how ol {
+    padding-inline-start: 1.2rem;
+    line-height: 1.9;
+  }
+
+  .site-footer {
+    padding: 2.5rem 0;
+    opacity: 0.7;
+    font-size: 0.9rem;
+  }
+</style>

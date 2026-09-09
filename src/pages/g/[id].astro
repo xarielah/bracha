@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GreetingCard from '../../components/GreetingCard.astro';
+import { getHoliday } from '../../data/holidays';
+import { getGreetingsCollection } from '../../lib/mongo';
+import NotFound from '../../components/NotFound.astro';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+let doc = null;
+if (id && /^[0-9A-Za-z]{6,16}$/.test(id)) {
+  try {
+    const col = await getGreetingsCollection();
+    doc = await col.findOne({ _id: id });
+  } catch (e) {
+    console.error('[g/:id] lookup failed', e);
+  }
+}
+
+const holiday = doc ? getHoliday(doc.holiday) : undefined;
+
+if (!doc || !holiday) {
+  Astro.response.status = 404;
+}
+---
+
+{
+  (!doc || !holiday) && (
+    <BaseLayout
+      title="הדף לא נמצא · ברכות לחגי ישראל"
+      description="הקישור שגוי או שהברכה כבר לא קיימת."
+      noindex={true}
+    >
+      <NotFound />
+    </BaseLayout>
+  )
+}
+
+{
+  doc && holiday && (
+    <BaseLayout
+      title={`${holiday.cardHeadline} · ברכה ל${holiday.name}`}
+      description={`קיבלת ברכה אישית ל${holiday.name}. לחצו כדי לחשוף אותה.`}
+      noindex={true}
+    >
+      <main class="reveal-page" data-holiday={holiday.slug}>
+    <section class="teaser" id="teaser">
+      <div class="teaser-inner">
+        <p class="teaser-emoji" aria-hidden="true">🎁</p>
+        <h1>קיבלת ברכה ל{holiday.name}!</h1>
+        <p class="teaser-sub">לחצו כדי לחשוף את הברכה שקיבלתם!</p>
+        <button type="button" id="reveal-btn" class="reveal-btn">
+          ✨ לחשיפת הברכה
+        </button>
+      </div>
+    </section>
+
+    <section class="revealed" id="revealed" hidden>
+      <div class="revealed-inner">
+        <GreetingCard
+          holiday={holiday}
+          fromNames={doc.fromNames}
+          toNames={doc.toNames}
+          message={doc.message}
+          interactive={true}
+        />
+      </div>
+    </section>
+      </main>
+    </BaseLayout>
+  )
+}
+
+<script>
+  import { celebrate } from '../../scripts/celebrate';
+
+  const teaser = document.querySelector<HTMLElement>('#teaser');
+  const revealed = document.querySelector<HTMLElement>('#revealed');
+  const revealBtn = document.querySelector<HTMLButtonElement>('#reveal-btn');
+  if (!teaser || !revealed || !revealBtn) throw new Error('not a greeting page');
+  const card = revealed.querySelector<HTMLElement>('.greeting-card')!;
+  const host = card.querySelector<HTMLElement>('.gc-canvas')!;
+  const falling: string[] = JSON.parse(card.dataset.falling || '[]');
+
+  function party() {
+    celebrate(host, falling, { burst: 30, duration: 4500 });
+  }
+
+  revealBtn.addEventListener('click', () => {
+    teaser.classList.add('gone');
+    setTimeout(() => {
+      teaser.hidden = true;
+      revealed.hidden = false;
+      revealed.classList.add('in');
+      party();
+    }, 420);
+  });
+
+  revealed.querySelector('.gc-replay')?.addEventListener('click', party);
+</script>
+
+<style>
+  .reveal-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.5rem, 6vw, 4rem) 1rem;
+  }
+
+  .teaser {
+    text-align: center;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    max-width: 30rem;
+  }
+  .teaser.gone { opacity: 0; transform: scale(0.94); }
+
+  .teaser-emoji { font-size: clamp(3rem, 12vw, 5rem); margin: 0; animation: bob 2s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-10px); } }
+
+  .teaser h1 { margin: 0.5rem 0 0; font-size: clamp(1.6rem, 6vw, 2.4rem); }
+  .teaser-sub { font-size: clamp(1.1rem, 3.5vw, 1.4rem); opacity: 0.9; margin: 0.75rem 0 1.75rem; }
+
+  .reveal-btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.9rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    background: #f2c14e;
+    color: #1a1a1a;
+    box-shadow: 0 14px 40px -12px rgba(242, 193, 78, 0.6);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  .revealed { width: 100%; max-width: 640px; }
+  .revealed.in { animation: pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+  }
+</style>

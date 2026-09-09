@@ -1,46 +1,66 @@
-# Astro Starter Kit: Basics
+# ברכות לחגי ישראל
 
-```sh
-npm create astro@latest -- --template basics
+אתר ליצירת ברכות אישיות, אינטראקטיביות ומעוצבות לכל חגי ישראל, ולשיתופן בקישור אחד.
+
+- **דף הבית** – grid של כל החגים, לכל חג עיצוב לפי הסממנים הדומיננטיים שלו (SVG/CSS מקורי).
+- **דף עורך** (`/[holiday]`) – WYSIWYG: מזינים שם המברך/ת (חובה), שם המבורך/ת (חובה)
+  ומלל אישי (עד ~60 מילים, לא חובה), והברכה מתעדכנת בזמן אמת. יוצרים קישור לשיתוף.
+- **דף ברכה** (`/g/:id`) – מוגש מהשרת (SSR). קודם preview "לחצו כדי לחשוף את הברכה
+  שקיבלתם!", ואז חשיפה עם אנימציית חג.
+- SEO: RTL, תגיות canonical/OG/Twitter, JSON-LD (`WebSite`, `ItemList`, `BreadcrumbList`,
+  `FAQPage`), `sitemap-index.xml`, `robots.txt`, תוכן עשיר על כל חג.
+
+## סטאק
+
+Astro 7 · פלט `static` + אדפטר `@astrojs/vercel` (רוט אחד ורוט API הם on-demand) ·
+MongoDB (driver רשמי) · Heebo + Frank Ruhl Libre.
+
+## הרצה מקומית
+
+```bash
+npm install
+cp .env.example .env      # ומלאו MONGODB_URI
+npx astro dev --background # ניהול: astro dev stop | status | logs
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+פותחים http://localhost:4321
 
-## 🚀 Project Structure
+## משתני סביבה
 
-Inside of your Astro project, you'll see the following folders and files:
+| משתנה             | חובה | תיאור                                             |
+|-------------------|------|--------------------------------------------------|
+| `MONGODB_URI`     | כן   | מחרוזת חיבור ל‑MongoDB Atlas / שרת Mongo          |
+| `MONGODB_DB`      | לא   | שם מסד הנתונים (ברירת מחדל `bracha`)              |
+| `PUBLIC_SITE_URL` | לא   | כתובת האתר ל‑canonical/OG/sitemap ולקישורי שיתוף |
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+הברכות נשמרות באוסף `greetings`. `_id` הוא מזהה אקראי בן 10 תווים (לא ניתן לניחוש).
+
+## פריסה ל‑Vercel
+
+1. מייבאים את הריפו ב‑Vercel (Framework: Astro – מזוהה אוטומטית).
+2. מגדירים `MONGODB_URI` (ואופציונלית `MONGODB_DB`, `PUBLIC_SITE_URL`) ב‑Environment Variables.
+3. ב‑MongoDB Atlas: מתירים גישה מ‑`0.0.0.0/0` (או מרשימת ה‑IP של Vercel) ומוסיפים משתמש DB.
+4. Deploy. עדכנו את כתובת ה‑`Sitemap` ב‑`public/robots.txt` לדומיין הסופי.
+
+## מבנה
+
 ```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+src/
+  data/holidays.ts        מקור אמת יחיד לכל החגים (סממנים, פלטה, תוכן SEO, FAQ)
+  lib/mongo.ts            סינגלטון חיבור + אוסף greetings
+  lib/greeting.ts         טיפוסים + ולידציה (שמות חובה, מלל ≤ 60 מילים)
+  lib/id.ts               יצירת מזהה ברכה
+  components/
+    Motif.astro           SVG אינליין לכל חג
+    GreetingCard.astro    כרטיס הברכה – משותף לעורך ולדף הסופי (זהות ויזואלית)
+    HolidayCard.astro     כרטיס ל‑grid בדף הבית
+    NotFound.astro
+  scripts/celebrate.ts    אנימציית נשירת אלמנטים (canvas, מכבד prefers-reduced-motion)
+  layouts/BaseLayout.astro <html dir="rtl"> + מטא + design tokens
+  pages/
+    index.astro           דף הבית
+    [holiday]/index.astro  דף העורך
+    g/[id].astro           דף הברכה (SSR)
+    api/greetings.ts       POST – יצירת ברכה
+    404.astro
+```

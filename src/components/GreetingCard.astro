@@ -1,0 +1,189 @@
+---
+import type { Holiday } from '../data/holidays';
+import Motif from './Motif.astro';
+
+export interface Props {
+  holiday: Holiday;
+  fromNames?: string;
+  toNames?: string;
+  message?: string;
+  /** interactive = clickable "celebrate again" + auto animation on mount */
+  interactive?: boolean;
+}
+
+const { holiday, fromNames = '', toNames = '', message = '', interactive = false } = Astro.props;
+const p = holiday.palette;
+const styleVars = [
+  `--bg:${p.bg}`,
+  `--ink:${p.ink}`,
+  `--accent:${p.accent}`,
+  `--accent2:${p.accent2}`,
+  `--surface:${p.surface}`,
+  `--surface-ink:${p.surfaceInk}`,
+].join(';');
+---
+
+<figure
+  class="greeting-card"
+  data-holiday={holiday.slug}
+  data-falling={JSON.stringify(holiday.fallingItems)}
+  data-interactive={interactive ? 'true' : 'false'}
+  style={styleVars}
+>
+  <div class="gc-canvas" aria-hidden="true"></div>
+  <div class="gc-inner">
+    <p class="gc-eyebrow">
+      <span class="gc-to" data-empty="לכבוד …">{toNames || 'לכבוד …'}</span>
+    </p>
+
+    <Motif slug={holiday.slug} class="gc-motif" />
+
+    <h2 class="gc-headline">{holiday.cardHeadline}</h2>
+
+    <p class="gc-message" data-placeholder={holiday.greetingOpeners[0]}>
+      {message || holiday.greetingOpeners[0]}
+    </p>
+
+    <figcaption class="gc-from">
+      <span class="gc-from-label">באהבה,</span>
+      <span class="gc-from-names" data-empty="שם המברך/ת">{fromNames || 'שם המברך/ת'}</span>
+    </figcaption>
+
+    <p class="gc-holiday-tag">{holiday.fullName} · {holiday.hebrewDate}</p>
+
+    {
+      interactive && (
+        <div class="gc-actions">
+          <button type="button" class="gc-replay">✨ עוד פעם!</button>
+          <a class="gc-cta" href={`/${holiday.slug}`}>
+            צרו ברכה משלכם
+          </a>
+        </div>
+      )
+    }
+  </div>
+</figure>
+
+<style>
+  .greeting-card {
+    position: relative;
+    margin: 0;
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--ink);
+    padding: clamp(1.5rem, 4vw, 3rem);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    isolation: isolate;
+  }
+
+  .gc-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .gc-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .gc-eyebrow {
+    margin: 0;
+    font-size: 0.95rem;
+    letter-spacing: 0.06em;
+    opacity: 0.9;
+  }
+
+  .gc-to,
+  .gc-from-names {
+    font-weight: 700;
+  }
+
+  .gc-motif {
+    width: clamp(90px, 22vw, 140px);
+    height: auto;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.25));
+    animation: gc-float 4s ease-in-out infinite;
+  }
+
+  @keyframes gc-float {
+    50% {
+      transform: translateY(-8px) rotate(-2deg);
+    }
+  }
+
+  .gc-headline {
+    margin: 0;
+    font-size: clamp(1.7rem, 5vw, 2.6rem);
+  }
+
+  .gc-message {
+    margin: 0;
+    background: var(--surface);
+    color: var(--surface-ink);
+    padding: 1.1rem 1.3rem;
+    border-radius: 14px;
+    max-width: 46ch;
+    font-size: clamp(1rem, 2.5vw, 1.2rem);
+    white-space: pre-wrap;
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.4);
+  }
+
+  .gc-from {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 1.05rem;
+  }
+
+  .gc-from-label {
+    opacity: 0.8;
+    font-size: 0.85rem;
+  }
+
+  .gc-holiday-tag {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+
+  .gc-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 0.75rem;
+  }
+
+  .gc-replay,
+  .gc-cta {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.6rem 1.3rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+  }
+
+  .gc-replay {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--surface-ink);
+  }
+
+  .gc-cta {
+    background: var(--accent2);
+    color: #fff;
+  }
+
+  .gc-replay:hover,
+  .gc-cta:hover {
+    transform: translateY(-2px);
+  }
+</style>

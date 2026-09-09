@@ -1,0 +1,148 @@
+---
+export interface Props {
+  slug: string;
+  class?: string;
+}
+const { slug, class: className } = Astro.props;
+// colors come from CSS custom props on an ancestor: --accent, --accent2, --ink
+---
+
+<svg
+  class={className}
+  viewBox="0 0 120 120"
+  role="img"
+  aria-hidden="true"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  {
+    slug === 'rosh-hashana' && (
+      <g>
+        <circle cx="60" cy="66" r="30" fill="var(--accent)" />
+        <path d="M60 36c-4-10 4-18 12-18-2 8-4 14-12 18Z" fill="var(--accent2)" />
+        <path d="M46 30c14 6 22 18 22 34" stroke="var(--accent2)" stroke-width="5" stroke-linecap="round" />
+        <circle cx="52" cy="64" r="4" fill="var(--accent2)" opacity="0.5" />
+        <circle cx="70" cy="72" r="4" fill="var(--accent2)" opacity="0.5" />
+      </g>
+    )
+  }
+  {
+    slug === 'yom-kippur' && (
+      <g>
+        <rect x="54" y="34" width="12" height="52" rx="6" fill="var(--accent)" />
+        <path d="M60 24c5 6 5 12 0 16-5-4-5-10 0-16Z" fill="var(--accent2)" />
+        <ellipse cx="60" cy="98" rx="26" ry="8" fill="var(--accent)" opacity="0.35" />
+      </g>
+    )
+  }
+  {
+    slug === 'sukkot' && (
+      <g>
+        <path d="M24 54 60 34l36 20" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
+        <path d="M30 52h60M34 48l6-8M50 48l6-8M66 48l6-8M82 48l6-8" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" />
+        <rect x="34" y="54" width="6" height="40" fill="var(--accent2)" />
+        <rect x="80" y="54" width="6" height="40" fill="var(--accent2)" />
+        <path d="M62 58v34" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" />
+        <circle cx="52" cy="82" r="7" fill="var(--accent)" />
+      </g>
+    )
+  }
+  {
+    slug === 'simchat-torah' && (
+      <g>
+        <rect x="30" y="34" width="60" height="52" rx="8" fill="var(--accent)" />
+        <rect x="26" y="30" width="10" height="60" rx="5" fill="var(--accent2)" />
+        <rect x="84" y="30" width="10" height="60" rx="5" fill="var(--accent2)" />
+        <path d="M46 50h28M46 60h28M46 70h20" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
+      </g>
+    )
+  }
+  {
+    slug === 'hanukkah' && (
+      <g>
+        <path
+          d="M60 44v42M32 58v28M88 58v28M40 58v28M48 58v28M72 58v28M80 58v28"
+          stroke="var(--accent2)"
+          stroke-width="5"
+          stroke-linecap="round"
+        />
+        <path d="M28 90h64" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
+        {[32, 40, 48, 60, 72, 80, 88].map((x) => (
+          <path d={`M${x} 52c3 4 3 8 0 12-3-4-3-8 0-12Z`} fill="var(--accent)" />
+        ))}
+      </g>
+    )
+  }
+  {
+    slug === 'tu-bishvat' && (
+      <g>
+        <rect x="56" y="62" width="8" height="30" rx="4" fill="var(--accent2)" />
+        <circle cx="60" cy="48" r="24" fill="var(--accent)" />
+        <circle cx="46" cy="42" r="5" fill="var(--ink)" opacity="0.5" />
+        <circle cx="72" cy="52" r="5" fill="var(--ink)" opacity="0.5" />
+        <circle cx="60" cy="36" r="5" fill="var(--ink)" opacity="0.5" />
+      </g>
+    )
+  }
+  {
+    slug === 'purim' && (
+      <g>
+        <path d="M30 46c0-8 12-14 30-14s30 6 30 14c0 20-14 34-30 34S30 66 30 46Z" fill="var(--accent)" />
+        <circle cx="48" cy="50" r="6" fill="var(--accent2)" />
+        <circle cx="72" cy="50" r="6" fill="var(--accent2)" />
+        <path d="M46 66c8 6 20 6 28 0" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
+        <path d="M60 26v-8M40 30l-6-6M80 30l6-6" stroke="var(--accent2)" stroke-width="4" stroke-linecap="round" />
+      </g>
+    )
+  }
+  {
+    slug === 'pesach' && (
+      <g>
+        <rect x="34" y="34" width="52" height="52" rx="8" fill="var(--accent)" />
+        {[42, 54, 66, 78].map((y) =>
+          [42, 54, 66, 78].map((x) => <circle cx={x} cy={y} r="2.4" fill="var(--accent2)" />)
+        )}
+        <path d="M34 60h52M60 34v52" stroke="var(--accent2)" stroke-width="2" opacity="0.4" />
+      </g>
+    )
+  }
+  {
+    slug === 'yom-haatzmaut' && (
+      <g>
+        <rect x="30" y="36" width="60" height="48" rx="4" fill="var(--surface)" />
+        <path d="M30 46h60M30 74h60" stroke="var(--accent)" stroke-width="7" />
+        <path
+          d="M60 50l4.7 8.1H73l-6.6 5 2.5 8-8.9-5-8.9 5 2.5-8-6.6-5h8.3z"
+          fill="var(--accent)"
+        />
+      </g>
+    )
+  }
+  {
+    slug === 'lag-baomer' && (
+      <g>
+        <path d="M60 44c8 10 16 18 16 28a16 16 0 1 1-32 0c0-10 8-18 16-28Z" fill="var(--accent)" />
+        <path d="M60 58c4 6 8 10 8 16a8 8 0 1 1-16 0c0-6 4-10 8-16Z" fill="var(--accent2)" />
+        <path d="M30 92h60" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
+        <path d="M26 30l8 8M94 30l-8 8M60 22v10" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" />
+      </g>
+    )
+  }
+  {
+    slug === 'shavuot' && (
+      <g>
+        <path d="M34 84c0-14 12-24 26-24s26 10 26 24Z" fill="var(--accent)" />
+        <path d="M34 84h52" stroke="var(--accent2)" stroke-width="6" stroke-linecap="round" />
+        <path
+          d="M46 60c0-8-2-14-6-18 6 0 12 4 12 14M74 60c0-8 2-14 6-18-6 0-12 4-12 14M60 58V38"
+          stroke="var(--accent2)"
+          stroke-width="4"
+          stroke-linecap="round"
+        />
+        <circle cx="52" cy="72" r="4" fill="var(--accent2)" />
+        <circle cx="68" cy="72" r="4" fill="var(--accent2)" />
+        <circle cx="60" cy="78" r="4" fill="var(--accent2)" />
+      </g>
+    )
+  }
+</svg>

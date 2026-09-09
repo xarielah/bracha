@@ -1,0 +1,40 @@
+---
+export interface Props {
+  title?: string;
+  message?: string;
+}
+const {
+  title = 'הדף לא נמצא',
+  message = 'הקישור שגוי או שהברכה כבר לא קיימת.',
+} = Astro.props;
+---
+
+<main class="nf">
+  <div class="container">
+    <p class="nf-emoji" aria-hidden="true">🕊️</p>
+    <h1>{title}</h1>
+    <p>{message}</p>
+    <a class="nf-btn" href="/">חזרה לכל החגים</a>
+  </div>
+</main>
+
+<style>
+  .nf {
+    min-height: 80vh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+  }
+  .nf-emoji { font-size: 4rem; margin: 0; }
+  .nf h1 { font-size: clamp(1.8rem, 6vw, 2.6rem); margin: 0.5rem 0; }
+  .nf-btn {
+    display: inline-block;
+    margin-top: 1.5rem;
+    padding: 0.8rem 1.8rem;
+    border-radius: 999px;
+    background: #f2c14e;
+    color: #1a1a1a;
+    font-weight: 700;
+    text-decoration: none;
+  }
+</style>
