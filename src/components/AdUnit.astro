@@ -1,0 +1,71 @@
+---
+import { ADSENSE_CLIENT, adsenseEnabled } from '../lib/ads';
+
+export interface Props {
+  /** AdSense ad-unit id (data-ad-slot). Nothing renders without it. */
+  slot?: string;
+  /** data-ad-format */
+  format?: string;
+  /** data-ad-layout (for in-article / in-feed units) */
+  layout?: string;
+  class?: string;
+  label?: string;
+}
+
+const {
+  slot = '',
+  format = 'auto',
+  layout,
+  class: className,
+  label = 'פרסומת',
+} = Astro.props;
+
+const show = adsenseEnabled && Boolean(slot);
+---
+
+{
+  show && (
+    <aside class:list={['ad', className]} aria-label="פרסומת">
+      <span class="ad-label">{label}</span>
+      <ins
+        class="adsbygoogle"
+        style="display:block"
+        data-ad-client={ADSENSE_CLIENT}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-ad-layout={layout}
+        data-full-width-responsive="true"
+      />
+      <script is:inline>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </aside>
+  )
+}
+
+<style>
+  .ad {
+    display: block;
+    width: 100%;
+    margin-block: clamp(1.5rem, 5vw, 3rem);
+    text-align: center;
+  }
+
+  .ad:has(.adsbygoogle[data-ad-status='unfilled']) {
+    display: none;
+  }
+
+  .ad-label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+  }
+
+  .adsbygoogle {
+    display: block;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+</style>

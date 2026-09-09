@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HolidayCard from '../components/HolidayCard.astro';
+import AdUnit from '../components/AdUnit.astro';
 import { holidays } from '../data/holidays';
+import { AD_SLOTS } from '../lib/ads';
 
 const site = Astro.site ?? new URL('http://localhost:4321');
 
@@ -60,6 +62,8 @@ const jsonLd = [
       }
     </ul>
 
+    <AdUnit slot={AD_SLOTS.content} />
+
     <section class="how">
       <h2>איך זה עובד?</h2>
       <ol>
@@ -70,12 +74,6 @@ const jsonLd = [
       </ol>
     </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <p>ברכות לחגי ישראל · נבנה באהבה לכל חג ומועד</p>
-    </div>
-  </footer>
 </BaseLayout>
 
 <style>
@@ -127,13 +125,5 @@ const jsonLd = [
   .how ol {
     padding-inline-start: 1.2rem;
     line-height: 1.9;
-  }
-
-  .site-footer {
-    padding: 2.5rem 0;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    border-top: 1px solid var(--border);
-    margin-top: 2rem;
   }
 </style>

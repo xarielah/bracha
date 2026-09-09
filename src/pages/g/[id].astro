@@ -4,6 +4,8 @@ import GreetingCard from '../../components/GreetingCard.astro';
 import { getHoliday } from '../../data/holidays';
 import { getGreetingsCollection } from '../../lib/mongo';
 import NotFound from '../../components/NotFound.astro';
+import AdUnit from '../../components/AdUnit.astro';
+import { AD_SLOTS } from '../../lib/ads';
 
 export const prerender = false;
 
@@ -66,6 +68,7 @@ if (!doc || !holiday) {
           message={doc.message}
           interactive={true}
         />
+        <AdUnit slot={AD_SLOTS.greeting} />
       </div>
     </section>
       </main>

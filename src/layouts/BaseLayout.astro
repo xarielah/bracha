@@ -1,6 +1,7 @@
 ---
 import '@fontsource-variable/heebo';
 import '@fontsource-variable/rubik';
+import { ADSENSE_CLIENT, adsenseEnabled } from '../lib/ads';
 
 export interface Props {
   title: string;
@@ -11,6 +12,8 @@ export interface Props {
   noindex?: boolean;
   keywords?: string[];
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** set false to skip loading the AdSense script on this page (e.g. 404) */
+  ads?: boolean;
 }
 
 const {
@@ -21,7 +24,11 @@ const {
   noindex = false,
   keywords = [],
   jsonLd,
+  ads = true,
 } = Astro.props;
+
+const loadAds = adsenseEnabled && ads;
+const year = new Date().getFullYear();
 
 const site = Astro.site ?? new URL('http://localhost:4321');
 const canonical = new URL(path, site).href;
@@ -37,6 +44,21 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f1020" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {
+      adsenseEnabled && (
+        <meta name="google-adsense-account" content={ADSENSE_CLIENT} />
+      )
+    }
+    {
+      loadAds && (
+        <script
+          is:inline
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`}
+          crossorigin="anonymous"
+        />
+      )
+    }
     <script is:inline>
       (function () {
         try {
@@ -84,6 +106,15 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
       <span aria-hidden="true">🌙</span>
     </button>
     <slot />
+    <footer class="site-footer">
+      <div class="container">
+        <nav class="site-footer__links" aria-label="ניווט תחתון">
+          <a href="/">כל החגים</a>
+          <a href="/privacy">מדיניות פרטיות</a>
+        </nav>
+        <p>© {year} ברכות לחגי ישראל · נבנה באהבה לכל חג ומועד</p>
+      </div>
+    </footer>
   </body>
 </html>
 
@@ -214,6 +245,29 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   .theme-toggle:hover {
     transform: scale(1.08);
+  }
+
+  .site-footer {
+    border-top: 1px solid var(--border);
+    margin-top: 3rem;
+    padding: 2rem 0 2.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+  .site-footer p {
+    margin: 0.6rem 0 0;
+  }
+  .site-footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+  }
+  .site-footer__links a {
+    color: var(--brand);
+    text-decoration: none;
+  }
+  .site-footer__links a:hover {
+    text-decoration: underline;
   }
 
   a {

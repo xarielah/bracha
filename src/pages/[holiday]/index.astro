@@ -4,6 +4,8 @@ import GreetingCard from "../../components/GreetingCard.astro";
 import { holidays, getHoliday } from "../../data/holidays";
 import { MESSAGE_MAX_WORDS } from "../../lib/greeting";
 import { TURNSTILE_TEST_SITE_KEY } from "../../lib/turnstile";
+import AdUnit from "../../components/AdUnit.astro";
+import { AD_SLOTS } from "../../lib/ads";
 
 const turnstileSiteKey =
   import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || TURNSTILE_TEST_SITE_KEY;
@@ -236,6 +238,8 @@ const jsonLd = [
           </div>
         </div>
       </div>
+
+      <AdUnit slot={AD_SLOTS.content} class="editor-ad" />
 
       <section class="about">
         <h2>על החג ועל הסממנים שלו</h2>
