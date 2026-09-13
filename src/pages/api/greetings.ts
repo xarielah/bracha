@@ -4,6 +4,7 @@ import { getGreetingsCollection } from '../../lib/mongo';
 import { newGreetingId } from '../../lib/id';
 import { rateLimit, getClientIp, tooManyRequests } from '../../lib/ratelimit';
 import { verifyTurnstile } from '../../lib/turnstile';
+import { verifyCsrf } from '../../lib/csrf';
 
 export const prerender = false;
 
@@ -33,6 +34,15 @@ export const POST: APIRoute = async ({ request, url }) => {
     raw = await request.json();
   } catch {
     return json({ error: 'גוף הבקשה אינו תקין' }, 400);
+  }
+
+  const csrf = verifyCsrf(request, url, raw.csrfToken);
+  if (!csrf.ok) {
+    console.warn('[api/greetings] csrf rejected:', csrf.reason);
+    return json(
+      { error: 'אימות האבטחה נכשל. רעננו את העמוד ונסו שוב.' },
+      403
+    );
   }
 
   const captcha = await verifyTurnstile(raw.turnstileToken, ip);

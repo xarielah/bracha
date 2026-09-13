@@ -442,6 +442,19 @@ const jsonLd = [
   const formError = document.querySelector<HTMLElement>("#form-error")!;
   let shareUrl = "";
 
+  function readCsrfToken(): string {
+    const row = document.cookie
+      .split("; ")
+      .find((r) => r.startsWith("bracha_csrf="));
+    if (!row) return "";
+    try {
+      return decodeURIComponent(row.slice("bracha_csrf=".length));
+    } catch {
+      return row.slice("bracha_csrf=".length);
+    }
+  }
+
+
   function whatsappMessage(): string {
     const from = fromInput.value.trim();
     return `${from} שלחו לך ברכה ל${holidayName}! לחצו על הקישור הבא כדי לצפות בברכה - ${shareUrl}`;
@@ -467,15 +480,27 @@ const jsonLd = [
     submitBtn.disabled = true;
     submitBtn.textContent = "רגע, יוצרים…";
     try {
+      const csrfToken = readCsrfToken();
+      if (!csrfToken) {
+        formError.textContent =
+          "אימות האבטחה נכשל. רעננו את העמוד ונסו שוב.";
+        formError.hidden = false;
+        resetTurnstile();
+        return;
+      }
       const res = await fetch("/api/greetings", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify({
           holiday: slug,
           fromNames: fromInput.value,
           toNames: toInput.value,
           message: messageInput.value,
           turnstileToken: token,
+          csrfToken,
         }),
       });
       const data = await res.json().catch(() => ({}));

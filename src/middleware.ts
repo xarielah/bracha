@@ -1,5 +1,6 @@
 import { defineMiddleware } from 'astro:middleware';
 import { rateLimit, getClientIp, tooManyRequests } from './lib/ratelimit';
+import { maybeIssueCsrfCookie } from './lib/csrf';
 
 // Coarse limit applied to every API request, regardless of endpoint.
 const API_LIMIT = 60;
@@ -14,5 +15,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     if (!rl.ok) return tooManyRequests(rl.retryAfter);
   }
 
-  return next();
+  const response = await next();
+
+  const setCookie = maybeIssueCsrfCookie(context.request, context.url);
+  if (setCookie) {
+    response.headers.append('Set-Cookie', setCookie);
+  }
+
+  return response;
 });
