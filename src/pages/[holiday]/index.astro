@@ -491,6 +491,29 @@ const jsonLd = [
     }
   }
 
+  /** Holiday pages are static on Vercel — middleware never sets the cookie.
+   *  Fetch a token from the SSR API before submit (and refresh the cookie). */
+  async function ensureCsrfToken(): Promise<string> {
+    const existing = readCsrfToken();
+    if (existing) return existing;
+    try {
+      const res = await fetch("/api/csrf", {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      if (!res.ok) return "";
+      const data = (await res.json().catch(() => ({}))) as { token?: string };
+      if (typeof data.token === "string" && data.token.length >= 32) {
+        return data.token;
+      }
+      // Cookie should now be set even if body parse failed.
+      return readCsrfToken();
+    } catch {
+      return "";
+    }
+  }
+
 
   function whatsappMessage(): string {
     const from = fromInput.value.trim();
@@ -503,6 +526,9 @@ const jsonLd = [
     ["fromNames", "toNames", "message"].forEach((n) => setError(n, null));
 
     if (!fromInput.value.trim()) return goToStep(1);
+  // Warm CSRF cookie early (static pages skip middleware Set-Cookie).
+  void ensureCsrfToken();
+
     if (!toInput.value.trim()) return goToStep(2);
     if (!validateStep(3)) return;
 
@@ -517,7 +543,7 @@ const jsonLd = [
     submitBtn.disabled = true;
     submitBtn.textContent = "רגע, יוצרים…";
     try {
-      const csrfToken = readCsrfToken();
+      const csrfToken = await ensureCsrfToken();
       if (!csrfToken) {
         formError.textContent =
           "אימות האבטחה נכשל. רעננו את העמוד ונסו שוב.";
