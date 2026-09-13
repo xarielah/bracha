@@ -1,7 +1,10 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import GreetingCard from "../../components/GreetingCard.astro";
+import HolidayEmblem from "../../components/HolidayEmblem.astro";
+import { Image } from "astro:assets";
 import { holidays, getHoliday } from "../../data/holidays";
+import { getHolidayArt } from "../../data/holidayArt";
 import { MESSAGE_MAX_WORDS } from "../../lib/greeting";
 import { TURNSTILE_TEST_SITE_KEY } from "../../lib/turnstile";
 import AdUnit from "../../components/AdUnit.astro";
@@ -17,6 +20,17 @@ export function getStaticPaths() {
 const { holiday: slug } = Astro.params;
 const holiday = getHoliday(slug);
 if (!holiday) return Astro.redirect("/404");
+
+const art = getHolidayArt(holiday.slug);
+const pal = holiday.palette;
+const editorVars = [
+  `--bg:${pal.bg}`,
+  `--ink:${pal.ink}`,
+  `--accent:${pal.accent}`,
+  `--accent2:${pal.accent2}`,
+  `--surface:${pal.surface}`,
+  `--surface-ink:${pal.surfaceInk}`,
+].join(";");
 
 const site = Astro.site ?? new URL("https://bracha.labkit.dev");
 
@@ -63,7 +77,20 @@ const jsonLd = [
     data-holiday={holiday.slug}
     data-slug={holiday.slug}
     data-name={holiday.name}
+    style={editorVars}
   >
+    {
+      art && (
+        <Image
+          src={art.bg}
+          alt=""
+          class="editor-bg"
+          widths={[960, 1440, 1920]}
+          sizes="100vw"
+        />
+      )
+    }
+    <div class="editor-veil" aria-hidden="true"></div>
     <script
       is:inline
       async
@@ -77,10 +104,20 @@ const jsonLd = [
       </nav>
 
       <header class="editor-head">
-        <h1>ברכה ל{holiday.name}</h1>
-        <p>
-          {holiday.tagline}. עונים על שלוש שאלות קצרות – והברכה מוכנה לשליחה.
-        </p>
+        <span class="editor-emblem">
+          <HolidayEmblem
+            slug={holiday.slug}
+            class="editor-emblem-img"
+            widths={[64, 96, 128]}
+            sizes="64px"
+          />
+        </span>
+        <div>
+          <h1>ברכה ל{holiday.name}</h1>
+          <p>
+            {holiday.tagline}. עונים על שלוש שאלות קצרות – והברכה מוכנה לשליחה.
+          </p>
+        </div>
       </header>
 
       <div class="editor-grid">
@@ -572,12 +609,41 @@ const jsonLd = [
 
 <style>
   .editor {
+    position: relative;
+    isolation: isolate;
     padding: clamp(1.5rem, 5vw, 3rem) 0 4rem;
     background: radial-gradient(
       1000px 400px at 90% -10%,
       color-mix(in srgb, var(--accent) 16%, transparent),
       transparent
     );
+  }
+  .editor-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% 30%;
+    opacity: 0.22;
+    pointer-events: none;
+  }
+  .editor-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--page-bg) 72%, transparent) 0%,
+      var(--page-bg) 38%,
+      var(--page-bg) 100%
+    );
+  }
+  .editor > .container {
+    position: relative;
+    z-index: 1;
   }
 
   .crumbs {
@@ -592,6 +658,24 @@ const jsonLd = [
     color: var(--brand);
   }
 
+  .editor-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .editor-emblem {
+    flex: 0 0 64px;
+    width: 64px;
+    height: 64px;
+    display: grid;
+    place-items: center;
+  }
+  .editor-emblem-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.22));
+  }
   .editor-head h1 {
     margin: 0;
     font-size: clamp(1.9rem, 6vw, 3rem);

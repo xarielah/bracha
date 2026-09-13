@@ -1,0 +1,33 @@
+---
+import { Image } from 'astro:assets';
+import { getHolidayArt } from '../data/holidayArt';
+
+export interface Props {
+  slug: string;
+  class?: string;
+  alt?: string;
+  /** default: home-card 82px emblem */
+  widths?: number[];
+  sizes?: string;
+}
+const {
+  slug,
+  class: className,
+  alt = '',
+  widths = [82, 164, 328],
+  sizes = '82px',
+} = Astro.props;
+const art = getHolidayArt(slug);
+---
+
+{
+  art ? (
+    <Image
+      src={art.emblem}
+      alt={alt}
+      class={className}
+      widths={widths}
+      sizes={sizes}
+    />
+  ) : null
+}

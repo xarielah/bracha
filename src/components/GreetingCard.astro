@@ -1,6 +1,8 @@
 ---
 import type { Holiday } from '../data/holidays';
-import Motif from './Motif.astro';
+import { Image } from 'astro:assets';
+import HolidayEmblem from './HolidayEmblem.astro';
+import { getHolidayArt } from '../data/holidayArt';
 
 export interface Props {
   holiday: Holiday;
@@ -19,6 +21,7 @@ const {
   interactive = false,
 } = Astro.props;
 const p = holiday.palette;
+const art = getHolidayArt(holiday.slug);
 const styleVars = [
   `--bg:${p.bg}`,
   `--ink:${p.ink}`,
@@ -36,6 +39,18 @@ const styleVars = [
   data-interactive={interactive ? 'true' : 'false'}
   style={styleVars}
 >
+  {
+    art && (
+      <Image
+        src={art.bg}
+        alt=""
+        class="gc-photo"
+        widths={[720, 960, 1200]}
+        sizes="(min-width: 900px) 50vw, 100vw"
+      />
+    )
+  }
+  <div class="gc-overlay" aria-hidden="true"></div>
   <div class="gc-shine" aria-hidden="true"></div>
   <div class="gc-canvas" aria-hidden="true"></div>
 
@@ -45,7 +60,12 @@ const styleVars = [
     </p>
 
     <span class="gc-emblem">
-      <Motif slug={holiday.slug} class="gc-motif" />
+      <HolidayEmblem
+        slug={holiday.slug}
+        class="gc-motif"
+        widths={[112, 156, 256, 328]}
+        sizes="(min-width: 700px) 156px, 26vw"
+      />
     </span>
 
     <h2 class="gc-headline">{holiday.cardHeadline}</h2>
@@ -95,13 +115,33 @@ const styleVars = [
     position: relative;
     margin: 0;
     border-radius: var(--radius);
-    background: var(--bg);
-    background-color: var(--accent2);
+    background: var(--accent2);
     color: var(--ink);
     padding: clamp(1.75rem, 4.5vw, 3.25rem);
     overflow: hidden;
     box-shadow: var(--shadow);
     isolation: isolate;
+  }
+
+  .gc-photo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 68% 45%;
+    pointer-events: none;
+  }
+
+  .gc-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, transparent 34%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.18) 46%, transparent 70%);
   }
 
   /* fine grain to kill gradient banding + add depth */
@@ -169,6 +209,7 @@ const styleVars = [
   .gc-motif {
     width: 100%;
     height: 100%;
+    object-fit: contain;
     filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.28));
     animation: gc-float 5s ease-in-out infinite;
   }
