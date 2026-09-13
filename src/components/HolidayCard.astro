@@ -1,12 +1,15 @@
 ---
 import type { Holiday } from '../data/holidays';
-import Motif from './Motif.astro';
+import { Image } from 'astro:assets';
+import HolidayEmblem from './HolidayEmblem.astro';
+import { getHolidayArt } from '../data/holidayArt';
 
 export interface Props {
   holiday: Holiday;
 }
 const { holiday } = Astro.props;
 const p = holiday.palette;
+const art = getHolidayArt(holiday.slug);
 const styleVars = [
   `--bg:${p.bg}`,
   `--ink:${p.ink}`,
@@ -22,9 +25,21 @@ const styleVars = [
   style={styleVars}
   aria-label={`ברכות ל${holiday.name}`}
 >
+  {
+    art && (
+      <Image
+        src={art.bg}
+        alt=""
+        class="hc-photo"
+        widths={[480, 720, 960]}
+        sizes="(min-width: 900px) 33vw, 90vw"
+      />
+    )
+  }
+  <div class="hc-overlay" aria-hidden="true"></div>
   <div class="hc-shine" aria-hidden="true"></div>
   <span class="hc-emblem">
-    <Motif slug={holiday.slug} class="hc-motif" />
+    <HolidayEmblem slug={holiday.slug} class="hc-motif" />
   </span>
   <div class="hc-text">
     <h2 class="hc-name">{holiday.name}</h2>
@@ -43,8 +58,7 @@ const styleVars = [
     min-height: 244px;
     padding: 1.5rem;
     border-radius: var(--radius);
-    background: var(--bg);
-    background-color: var(--accent2);
+    background: var(--accent2);
     color: var(--ink);
     text-decoration: none;
     overflow: hidden;
@@ -53,17 +67,39 @@ const styleVars = [
     transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
 
+  .hc-photo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    object-fit: cover;
+    object-position: center;
+    pointer-events: none;
+  }
+
+  .hc-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, transparent 38%),
+      linear-gradient(0deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.22) 48%, transparent 72%);
+  }
+
   .hc-shine {
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(110% 55% at 50% -25%, rgba(255, 255, 255, 0.25), transparent 60%),
-      radial-gradient(70% 50% at 110% 120%, rgba(0, 0, 0, 0.24), transparent 60%);
+      radial-gradient(110% 55% at 50% -25%, rgba(255, 255, 255, 0.18), transparent 60%),
+      radial-gradient(70% 50% at 110% 120%, rgba(0, 0, 0, 0.28), transparent 60%);
   }
 
-  .holiday-card > :not(.hc-shine) {
+  .holiday-card > :not(.hc-photo):not(.hc-overlay):not(.hc-shine) {
     position: relative;
     z-index: 1;
   }
@@ -75,18 +111,26 @@ const styleVars = [
   }
 
   .hc-emblem {
+    flex: 0 0 82px;
     width: 82px;
     height: 82px;
     display: grid;
     place-items: center;
+    overflow: hidden;
+    border-radius: 18px;
   }
-  .hc-motif {
-    width: 100%;
-    height: 100%;
+  /* class is on child component Image — must be global for Astro scoping */
+  .holiday-card :global(.hc-motif),
+  .holiday-card :global(.holiday-emblem) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center;
     filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.32));
     transition: transform 0.25s ease;
   }
-  .holiday-card:hover .hc-motif {
+  .holiday-card:hover :global(.hc-motif),
+  .holiday-card:hover :global(.holiday-emblem) {
     transform: rotate(-4deg) scale(1.06);
   }
 
@@ -97,13 +141,14 @@ const styleVars = [
   .hc-name {
     margin: 0;
     font-size: 1.65rem;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.22);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
   }
 
   .hc-tagline {
     margin: 0.2rem 0 0;
     opacity: 0.92;
     font-size: 0.95rem;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
   }
 
   .hc-go {
@@ -111,11 +156,13 @@ const styleVars = [
     font-size: 0.9rem;
     color: var(--ink);
     opacity: 0.85;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .holiday-card,
-    .hc-motif {
+    .holiday-card :global(.hc-motif),
+    .holiday-card :global(.holiday-emblem) {
       transition: none;
     }
   }
