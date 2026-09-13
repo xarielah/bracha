@@ -129,8 +129,9 @@ const styleVars = [
     z-index: 0;
     width: 100%;
     height: 100%;
+    max-width: none;
     object-fit: cover;
-    object-position: 68% 45%;
+    object-position: center;
     pointer-events: none;
   }
 
@@ -205,11 +206,15 @@ const styleVars = [
     width: clamp(112px, 26vw, 156px);
     height: clamp(112px, 26vw, 156px);
     margin: 0.25rem 0;
+    overflow: hidden;
+    border-radius: 22px;
   }
-  .gc-motif {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+  .greeting-card :global(.gc-motif),
+  .greeting-card :global(.holiday-emblem) {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center;
     filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.28));
     animation: gc-float 5s ease-in-out infinite;
   }
