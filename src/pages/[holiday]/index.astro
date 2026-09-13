@@ -18,7 +18,7 @@ const { holiday: slug } = Astro.params;
 const holiday = getHoliday(slug);
 if (!holiday) return Astro.redirect("/404");
 
-const site = Astro.site ?? new URL("http://localhost:4321");
+const site = Astro.site ?? new URL("https://bracha.labkit.dev");
 
 const jsonLd = [
   {

@@ -20,7 +20,7 @@ const {
   title,
   description,
   path = Astro.url.pathname,
-  image = '/og-default.svg',
+  image = '/og-default.png',
   noindex = false,
   keywords = [],
   jsonLd,
@@ -30,7 +30,7 @@ const {
 const loadAds = adsenseEnabled && ads;
 const year = new Date().getFullYear();
 
-const site = Astro.site ?? new URL('http://localhost:4321');
+const site = Astro.site ?? new URL('https://bracha.labkit.dev');
 const canonical = new URL(path, site).href;
 const ogImage = new URL(image, site).href;
 const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
@@ -75,6 +75,7 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
     {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
+    <link rel="sitemap" type="application/xml" href="/sitemap-index.xml" />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ברכות לחגי ישראל" />
@@ -83,6 +84,7 @@ const jsonLdArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content={title} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
