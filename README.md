@@ -49,6 +49,7 @@ npx astro dev --background # ניהול: astro dev stop | status | logs
 - **Cloudflare Turnstile** על טופס הברכה: ווידג'ט בעמוד העורך, ואימות ה‑token מול
   `siteverify` ב‑`src/pages/api/greetings.ts` (`src/lib/turnstile.ts`). מפתחות אמיתיים:
   https://dash.cloudflare.com/?to=/:account/turnstile
+- **CSRF (double-submit)** – קוקי `bracha_csrf` (לא HttpOnly) מונפק ב‑middleware בעת טעינת עמודים; הלקוח שולח את אותו ערך ב‑`X-CSRF-Token` ובגוף הבקשה. ה‑API מאמת התאמה + Origin/Referer לפני Turnstile (`src/lib/csrf.ts`).
 - **Rate limiting** מבוסס MongoDB (חלון קבוע, משותף בין כל ה‑serverless instances,
   אוסף `ratelimits` עם TTL index) — `src/lib/ratelimit.ts`:
   - `src/middleware.ts` — 60 בקשות/דקה לכל IP על כל `/api/*`.
